@@ -1,0 +1,12 @@
+{
+  "method": "NotifyStatus",
+  "params": {
+    "input:1": {
+      "state": true,
+      "id": 1
+    },
+    "ts": 1789468476.40
+  },
+  "src": "shellyplusi4-78421c53c500",
+  "dst": "_"
+}

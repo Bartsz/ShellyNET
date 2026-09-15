@@ -1,0 +1,22 @@
+{
+  "method": "NotifyEvent",
+  "dst": "_",
+  "params": {
+    "ts": 1789469256.98,
+    "events": [
+      {
+        "id": 0,
+        "component": "input:0",
+        "ts": 1789469256.98,
+        "event": "btn_up"
+      },
+      {
+        "id": 0,
+        "event": "btn_down",
+        "ts": 1789469256.98,
+        "component": "input:1"
+      }
+    ]
+  },
+  "src": "shellyplusi4-78421c53c500"
+}

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/ShellyNet.Client.UnitTests/ShellyNet.Client.UnitTests.csproj" Id="c245d28f-1156-47e5-8158-214aa248894a" />
+  </Folder>
+  <Folder Name="/_config/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="ShellyNET.Benchmarks/ShellyNET.Benchmarks.csproj" Id="ffd12d14-18a6-4291-8b0c-fb085fac4ffd" />
+  <Project Path="ShellyNET.Client/ShellyNET.Client.csproj" />
+  <Project Path="ShellyNet.DomainModel/ShellyNet.DomainModel.csproj" Id="bc3ff8f6-8828-4c38-a515-f74745948fa6" />
+</Solution>
