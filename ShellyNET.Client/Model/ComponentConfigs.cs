@@ -1,7 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-
-namespace ShellyNET.Client.Model;
+﻿namespace ShellyNET.Client.Model;
 
 // Generated from the current Shelly Gen2+ component documentation for Shelly.GetConfig payloads.
 // Streamer, HTTP, KVS, Schedule, Webhook and XMOD are services without a GetConfig payload.
@@ -635,6 +632,7 @@ public enum WsSslCa
     [JsonStringEnumMemberName("ca.pem")]
     BuiltInCa
 }
+
 /// <summary>Represents the aggregate object returned by Shelly.GetConfig; dynamic component keys such as switch:0 are retained verbatim.</summary>
 public sealed record class ShellyGetConfigResponse
 {
@@ -644,16 +642,17 @@ public sealed record class ShellyGetConfigResponse
 
 }
 
-
+public interface IShellyComponentConfig
+{
+    static abstract string ComponentName { get; }
+}
 
 
 public abstract record class ShellyComponentConfigBase;
 
 
-
-
 /// <summary>Controls whether the camera indicates activity with its LED.</summary>
-public sealed record class CameraLedConfig : ShellyComponentConfigBase
+public sealed record class CameraLedConfig
 {
     /// <summary>Determines whether the camera activity LED is enabled.</summary>
     [JsonPropertyName("enable")]
@@ -662,7 +661,7 @@ public sealed record class CameraLedConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls microphone capture for camera streams and recordings.</summary>
-public sealed record class CameraAudioInputConfig : ShellyComponentConfigBase
+public sealed record class CameraAudioInputConfig
 {
     /// <summary>Determines whether microphone audio is captured.</summary>
     [JsonPropertyName("enable")]
@@ -671,7 +670,7 @@ public sealed record class CameraAudioInputConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls speaker output used for camera sounds and playback.</summary>
-public sealed record class CameraAudioOutputConfig : ShellyComponentConfigBase
+public sealed record class CameraAudioOutputConfig
 {
     /// <summary>Sets speaker volume as a percentage from 0 to 100.</summary>
     [JsonPropertyName("volume")]
@@ -680,7 +679,7 @@ public sealed record class CameraAudioOutputConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Groups microphone and speaker settings used by the camera.</summary>
-public sealed record class CameraAudioConfig : ShellyComponentConfigBase
+public sealed record class CameraAudioConfig
 {
     /// <summary>Controls microphone capture.</summary>
     [JsonPropertyName("input")]
@@ -693,7 +692,7 @@ public sealed record class CameraAudioConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls whether built-in and event sounds may be played.</summary>
-public sealed record class CameraSoundsConfig : ShellyComponentConfigBase
+public sealed record class CameraSoundsConfig
 {
     /// <summary>Determines whether sound playback is permitted.</summary>
     [JsonPropertyName("enable")]
@@ -702,7 +701,7 @@ public sealed record class CameraSoundsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls automatic clip recording when motion is detected.</summary>
-public sealed record class CameraMotionRecordingConfig : ShellyComponentConfigBase
+public sealed record class CameraMotionRecordingConfig
 {
     /// <summary>Determines whether detected motion starts a recording clip.</summary>
     [JsonPropertyName("enable")]
@@ -711,7 +710,7 @@ public sealed record class CameraMotionRecordingConfig : ShellyComponentConfigBa
 }
 
 /// <summary>Controls motion detection behavior and its recording response.</summary>
-public sealed record class CameraMotionConfig : ShellyComponentConfigBase
+public sealed record class CameraMotionConfig
 {
     /// <summary>Sets the sensitivity preset used by motion detection.</summary>
     [JsonPropertyName("sensitivity")]
@@ -724,7 +723,7 @@ public sealed record class CameraMotionConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls infrared night imaging and automatic day/night switching.</summary>
-public sealed record class CameraNightVisionConfig : ShellyComponentConfigBase
+public sealed record class CameraNightVisionConfig
 {
     /// <summary>Selects automatic, forced-day, or forced-night operation.</summary>
     [JsonPropertyName("mode")]
@@ -745,7 +744,7 @@ public sealed record class CameraNightVisionConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls the camera RTSP server used by local streaming clients.</summary>
-public sealed record class CameraRtspConfig : ShellyComponentConfigBase
+public sealed record class CameraRtspConfig
 {
     /// <summary>Determines whether the RTSP server is available.</summary>
     [JsonPropertyName("enable")]
@@ -754,7 +753,7 @@ public sealed record class CameraRtspConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls image processing applied to camera video.</summary>
-public sealed record class CameraVideoConfig : ShellyComponentConfigBase
+public sealed record class CameraVideoConfig
 {
     /// <summary>Adjusts image brightness from 0 to 100.</summary>
     [JsonPropertyName("brightness")]
@@ -795,7 +794,7 @@ public sealed record class CameraVideoConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls resolution and bitrate for one camera stream.</summary>
-public sealed record class CameraStreamConfig : ShellyComponentConfigBase
+public sealed record class CameraStreamConfig
 {
     /// <summary>Selects a resolution and frame-rate combination supported by Camera.GetCapabilities.</summary>
     [JsonPropertyName("resolution")]
@@ -808,8 +807,10 @@ public sealed record class CameraStreamConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures camera capture, audio, image processing, motion handling and streams.</summary>
-public sealed record class CameraConfig : ShellyComponentConfigBase
+public sealed record class CameraConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Camera";
+
     /// <summary>Identifies the camera component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -853,8 +854,10 @@ public sealed record class CameraConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines a polygon used for camera motion detection or privacy masking.</summary>
-public sealed record class CameraZoneConfig : ShellyComponentConfigBase
+public sealed record class CameraZoneConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "CameraZone";
+
     /// <summary>Identifies the camera-zone component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -882,7 +885,7 @@ public sealed record class CameraZoneConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures an NFS target used by the storage component.</summary>
-public sealed record class StorageNfsConfig : ShellyComponentConfigBase
+public sealed record class StorageNfsConfig
 {
     /// <summary>Sets the NFS host; null or omission disables the target according to device behavior.</summary>
     [JsonPropertyName("host")]
@@ -895,8 +898,10 @@ public sealed record class StorageNfsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures a storage instance and its optional network filesystem target.</summary>
-public sealed record class StorageConfig : ShellyComponentConfigBase
+public sealed record class StorageConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Storage";
+
     /// <summary>Identifies the storage component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -912,7 +917,7 @@ public sealed record class StorageConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls RPC access over Bluetooth Low Energy.</summary>
-public sealed record class BLERpcConfig : ShellyComponentConfigBase
+public sealed record class BLERpcConfig
 {
     /// <summary>Determines whether RPC communication is exposed over BLE.</summary>
     [JsonPropertyName("enable")]
@@ -921,7 +926,7 @@ public sealed record class BLERpcConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Represents the legacy BLE observer configuration retained for firmware compatibility.</summary>
-public sealed record class BLEObserverConfig : ShellyComponentConfigBase
+public sealed record class BLEObserverConfig
 {
     /// <summary>Determines whether the legacy BLE observer is enabled on firmware that still reports it.</summary>
     [JsonPropertyName("enable")]
@@ -930,8 +935,10 @@ public sealed record class BLEObserverConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures Bluetooth Low Energy services exposed by the device.</summary>
-public sealed record class BLEConfig : ShellyComponentConfigBase
+public sealed record class BLEConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "BLE";
+
     /// <summary>Controls current BLE RPC availability.</summary>
     [JsonPropertyName("rpc")]
     public BLERpcConfig? Rpc { get; init; }
@@ -947,8 +954,10 @@ public sealed record class BLEConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures circuit-breaker voltage protection and automatic recovery behavior.</summary>
-public sealed record class CBConfig : ShellyComponentConfigBase
+public sealed record class CBConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "CB";
+
     /// <summary>Identifies the circuit-breaker component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -984,7 +993,7 @@ public sealed record class CBConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls brightness and color temperature during the configured night period.</summary>
-public sealed record class CCTNightModeConfig : ShellyComponentConfigBase
+public sealed record class CCTNightModeConfig
 {
     /// <summary>Determines whether night-mode limits are applied.</summary>
     [JsonPropertyName("enable")]
@@ -1005,7 +1014,7 @@ public sealed record class CCTNightModeConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines the output preset applied after a supported double button press.</summary>
-public sealed record class CCTButtonDoublePushConfig : ShellyComponentConfigBase
+public sealed record class CCTButtonDoublePushConfig
 {
     /// <summary>Sets preset brightness, or null to preserve the current brightness.</summary>
     [JsonPropertyName("brightness")]
@@ -1018,7 +1027,7 @@ public sealed record class CCTButtonDoublePushConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Groups CCT button-triggered output presets.</summary>
-public sealed record class CCTButtonPresetsConfig : ShellyComponentConfigBase
+public sealed record class CCTButtonPresetsConfig
 {
     /// <summary>Defines the optional double-push preset; null disables it.</summary>
     [JsonPropertyName("button_doublepush")]
@@ -1027,8 +1036,10 @@ public sealed record class CCTButtonPresetsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures tunable-white output startup, timers, night mode, button behavior and protection limits.</summary>
-public sealed record class CCTConfig : ShellyComponentConfigBase
+public sealed record class CCTConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "CCT";
+
     /// <summary>Identifies the CCT component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1100,8 +1111,10 @@ public sealed record class CCTConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls whether the device maintains its Shelly Cloud connection and which endpoint it uses.</summary>
-public sealed record class CloudConfig : ShellyComponentConfigBase
+public sealed record class CloudConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Cloud";
+
     /// <summary>Determines whether cloud connectivity is enabled.</summary>
     [JsonPropertyName("enable")]
     public bool Enable { get; init; }
@@ -1113,7 +1126,7 @@ public sealed record class CloudConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls motor-idle detection used to recognize completed cover movement.</summary>
-public sealed record class CoverMotorConfig : ShellyComponentConfigBase
+public sealed record class CoverMotorConfig
 {
     /// <summary>Sets the power threshold below which the motor is considered idle.</summary>
     [JsonPropertyName("idle_power_thr")]
@@ -1126,7 +1139,7 @@ public sealed record class CoverMotorConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls motor obstruction detection and the response to a detected obstruction.</summary>
-public sealed record class CoverObstructionDetectionConfig : ShellyComponentConfigBase
+public sealed record class CoverObstructionDetectionConfig
 {
     /// <summary>Determines whether obstruction detection is active.</summary>
     [JsonPropertyName("enable")]
@@ -1151,7 +1164,7 @@ public sealed record class CoverObstructionDetectionConfig : ShellyComponentConf
 }
 
 /// <summary>Controls how an external safety switch constrains cover movement.</summary>
-public sealed record class CoverSafetySwitchConfig : ShellyComponentConfigBase
+public sealed record class CoverSafetySwitchConfig
 {
     /// <summary>Determines whether the safety-switch logic is active.</summary>
     [JsonPropertyName("enable")]
@@ -1172,7 +1185,7 @@ public sealed record class CoverSafetySwitchConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls slat calibration and positioning for covers with tilt/slat support.</summary>
-public sealed record class CoverSlatConfig : ShellyComponentConfigBase
+public sealed record class CoverSlatConfig
 {
     /// <summary>Determines whether slat positioning is enabled.</summary>
     [JsonPropertyName("enable")]
@@ -1201,8 +1214,10 @@ public sealed record class CoverSlatConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures motorized-cover input behavior, travel timing, safety, obstruction handling and optional slat control.</summary>
-public sealed record class CoverConfig : ShellyComponentConfigBase
+public sealed record class CoverConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Cover";
+
     /// <summary>Identifies the cover component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1278,27 +1293,28 @@ public sealed record class CoverConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Represents the DevicePower configuration result; current firmware returns JSON null, so instances are not expected.</summary>
-public sealed record class DevicePowerConfig : ShellyComponentConfigBase
+public sealed record class DevicePowerConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "DevicePower";
+
 }
 
 /// <summary>Represents the empty configuration object returned by EM1Data.GetConfig.</summary>
-public sealed record class EM1DataConfig : ShellyComponentConfigBase
+public sealed record class EM1DataConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "EM1Data";
+
 }
 
 /// <summary>Represents the empty configuration object returned by EMData.GetConfig.</summary>
-public sealed record class EMDataConfig : ShellyComponentConfigBase
+public sealed record class EMDataConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "EMData";
 }
-
-/// <summary>Represents the empty configuration object currently returned by MbRtuClient.GetConfig.</summary>
-public sealed record class MbRtuClientConfig : ShellyComponentConfigBase
-{
-}
+ 
 
 /// <summary>Controls per-phase reversal of measured active power and energy direction.</summary>
-public sealed record class EMReverseConfig : ShellyComponentConfigBase
+public sealed record class EMReverseConfig
 {
     /// <summary>Reverses measurement direction for phase A.</summary>
     [JsonPropertyName("a")]
@@ -1315,7 +1331,7 @@ public sealed record class EMReverseConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines under/over thresholds for voltage, current and power on one phase.</summary>
-public sealed record class EMPhaseAlarmConfig : ShellyComponentConfigBase
+public sealed record class EMPhaseAlarmConfig
 {
     /// <summary>Defines under/over voltage thresholds; null disables the threshold set.</summary>
     [JsonPropertyName("voltage")]
@@ -1332,7 +1348,7 @@ public sealed record class EMPhaseAlarmConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Groups electrical alarm thresholds by phase.</summary>
-public sealed record class EMAlarmsConfig : ShellyComponentConfigBase
+public sealed record class EMAlarmsConfig
 {
     /// <summary>Defines alarm thresholds for phase A.</summary>
     [JsonPropertyName("a")]
@@ -1349,8 +1365,10 @@ public sealed record class EMAlarmsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures a three-phase energy meter, including phase selection, measurement direction and alarms.</summary>
-public sealed record class EMConfig : ShellyComponentConfigBase
+public sealed record class EMConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "EM";
+
     /// <summary>Identifies the EM component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1386,7 +1404,7 @@ public sealed record class EMConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines under/over alarm thresholds for a single electrical measurement channel.</summary>
-public sealed record class ElectricalAlarmsConfig : ShellyComponentConfigBase
+public sealed record class ElectricalAlarmsConfig
 {
     /// <summary>Defines under/over voltage thresholds; null disables the threshold set.</summary>
     [JsonPropertyName("voltage")]
@@ -1403,8 +1421,10 @@ public sealed record class ElectricalAlarmsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures a single-channel energy meter, measurement direction, transformer type and alarms.</summary>
-public sealed record class EM1Config : ShellyComponentConfigBase
+public sealed record class EM1Config : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "EM1";
+
     /// <summary>Identifies the EM1 component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1428,8 +1448,10 @@ public sealed record class EM1Config : ShellyComponentConfigBase
 }
 
 /// <summary>Configures Ethernet client/server mode, IPv4 addressing and the optional DHCP server range.</summary>
-public sealed record class EthConfig : ShellyComponentConfigBase
+public sealed record class EthernetConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Eth";
+
     /// <summary>Determines whether the Ethernet interface is enabled.</summary>
     [JsonPropertyName("enable")]
     public bool Enable { get; init; }
@@ -1469,8 +1491,10 @@ public sealed record class EthConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures how the flood sensor reports and announces detected water.</summary>
-public sealed record class FloodConfig : ShellyComponentConfigBase
+public sealed record class FloodConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Flood";
+
     /// <summary>Identifies the flood component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1490,8 +1514,10 @@ public sealed record class FloodConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures humidity reporting sensitivity and measurement correction.</summary>
-public sealed record class HumidityConfig : ShellyComponentConfigBase
+public sealed record class HumidityConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Humidity";
+
     /// <summary>Identifies the humidity component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1511,8 +1537,10 @@ public sealed record class HumidityConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures light-level thresholds used to classify the environment as dark or bright.</summary>
-public sealed record class IlluminanceConfig : ShellyComponentConfigBase
+public sealed record class IlluminanceConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Illuminance";
+
     /// <summary>Identifies the illuminance component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1532,7 +1560,7 @@ public sealed record class IlluminanceConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines a JavaScript expression and output unit used to expose a transformed sensor value.</summary>
-public sealed record class ValueTransformationConfig : ShellyComponentConfigBase
+public sealed record class ValueTransformationConfig 
 {
     /// <summary>Transforms the raw value x; null or an empty expression disables transformation.</summary>
     [JsonPropertyName("expr")]
@@ -1545,8 +1573,10 @@ public sealed record class ValueTransformationConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures interpretation, reporting and optional value transformation for a physical input.</summary>
-public sealed record class InputConfig : ShellyComponentConfigBase
+public sealed record class InputConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Input";
+
     /// <summary>Identifies the Input component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1610,7 +1640,7 @@ public sealed record class InputConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls the light brightness limit during a scheduled night period.</summary>
-public sealed record class LightNightModeConfig : ShellyComponentConfigBase
+public sealed record class LightNightModeConfig
 {
     /// <summary>Determines whether night-mode brightness limiting is active.</summary>
     [JsonPropertyName("enable")]
@@ -1627,7 +1657,7 @@ public sealed record class LightNightModeConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines the brightness applied after a supported double button press.</summary>
-public sealed record class LightButtonDoublePushConfig : ShellyComponentConfigBase
+public sealed record class LightButtonDoublePushConfig
 {
     /// <summary>Sets the brightness preset applied on double push.</summary>
     [JsonPropertyName("brightness")]
@@ -1636,7 +1666,7 @@ public sealed record class LightButtonDoublePushConfig : ShellyComponentConfigBa
 }
 
 /// <summary>Groups button-triggered presets for a dimmable light.</summary>
-public sealed record class LightButtonPresetsConfig : ShellyComponentConfigBase
+public sealed record class LightButtonPresetsConfig
 {
     /// <summary>Defines the optional double-push preset; null disables it.</summary>
     [JsonPropertyName("button_doublepush")]
@@ -1645,7 +1675,7 @@ public sealed record class LightButtonPresetsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls the temporary warmup level used when turning on at low brightness.</summary>
-public sealed record class LightWarmupConfig : ShellyComponentConfigBase
+public sealed record class LightWarmupConfig
 {
     /// <summary>Determines whether warmup is applied when toggling on below the low-brightness threshold.</summary>
     [JsonPropertyName("enable")]
@@ -1662,8 +1692,10 @@ public sealed record class LightWarmupConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures dimmable-light startup, input control, timers, night mode, presets and protection limits.</summary>
-public sealed record class LightConfig : ShellyComponentConfigBase
+public sealed record class LightConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Light";
+
     /// <summary>Identifies the Light component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1751,8 +1783,10 @@ public sealed record class LightConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls whether the Matter server is enabled for commissioning and fabric participation.</summary>
-public sealed record class MatterConfig : ShellyComponentConfigBase
+public sealed record class MatterConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Matter";
+
     /// <summary>Determines whether Matter functionality is enabled.</summary>
     [JsonPropertyName("enable")]
     public bool Enable { get; init; }
@@ -1760,8 +1794,10 @@ public sealed record class MatterConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls whether the Modbus TCP server is enabled.</summary>
-public sealed record class ModbusConfig : ShellyComponentConfigBase
+public sealed record class ModbusConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Modbus";
+
     /// <summary>Determines whether the device accepts Modbus TCP connections.</summary>
     [JsonPropertyName("enable")]
     public bool Enable { get; init; }
@@ -1769,8 +1805,11 @@ public sealed record class ModbusConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures the outbound MQTT connection, topic routing, TLS and notification/control features.</summary>
-public sealed record class MQTTConfig : ShellyComponentConfigBase
+public sealed record class MQTTConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "MQTT";
+
+
     /// <summary>Determines whether the MQTT connection is enabled.</summary>
     [JsonPropertyName("enable")]
     public bool Enable { get; init; }
@@ -1818,8 +1857,10 @@ public sealed record class MQTTConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures a single-channel power meter, measurement direction and electrical alarms.</summary>
-public sealed record class PM1Config : ShellyComponentConfigBase
+public sealed record class PM1Config : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "PM1";
+
     /// <summary>Identifies the PM1 component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -1839,8 +1880,10 @@ public sealed record class PM1Config : ShellyComponentConfigBase
 }
 
 /// <summary>Selects the active Pill peripheral mode and assigns roles to its configurable pins.</summary>
-public sealed record class PillConfig : ShellyComponentConfigBase
+public sealed record class PillConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Pill";
+
     /// <summary>Selects the peripheral subsystem exposed by the device.</summary>
     [JsonPropertyName("mode")]
     public PillMode Mode { get; init; }
@@ -1860,7 +1903,7 @@ public sealed record class PillConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Tunes thresholds used to enter and leave the presence detector tracking states.</summary>
-public sealed record class PresenceSensorStateConfig : ShellyComponentConfigBase
+public sealed record class PresenceSensorStateConfig
 {
     /// <summary>Sets the motion threshold that activates detection.</summary>
     [JsonPropertyName("det_act_thr")]
@@ -1885,7 +1928,7 @@ public sealed record class PresenceSensorStateConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures physical mounting and radar-detection tuning for the presence sensor.</summary>
-public sealed record class PresenceSensorConfig : ShellyComponentConfigBase
+public sealed record class PresenceSensorConfig
 {
     /// <summary>Accounts for a sensor mounted with a 180-degree flip.</summary>
     [JsonPropertyName("flipped")]
@@ -1934,7 +1977,7 @@ public sealed record class PresenceSensorConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls presentation preferences for presence-sensor values.</summary>
-public sealed record class PresenceUiConfig : ShellyComponentConfigBase
+public sealed record class PresenceUiConfig
 {
     /// <summary>Uses imperial units in the device UI when enabled.</summary>
     [JsonPropertyName("imperial")]
@@ -1943,7 +1986,7 @@ public sealed record class PresenceUiConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls presence-device LED brightness during a scheduled night period.</summary>
-public sealed record class PresenceNightModeConfig : ShellyComponentConfigBase
+public sealed record class PresenceNightModeConfig
 {
     /// <summary>Determines whether LED night mode is active.</summary>
     [JsonPropertyName("enable")]
@@ -1960,7 +2003,7 @@ public sealed record class PresenceNightModeConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls normal and night-period brightness of the presence-device LEDs.</summary>
-public sealed record class PresenceLedsConfig : ShellyComponentConfigBase
+public sealed record class PresenceLedsConfig
 {
     /// <summary>Sets the normal maximum LED brightness; current device examples return a numeric level.</summary>
     [JsonPropertyName("brightness")]
@@ -1973,8 +2016,10 @@ public sealed record class PresenceLedsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures radar tracking limits, mounting geometry, detection tuning, ignored areas and LEDs.</summary>
-public sealed record class PresenceConfig : ShellyComponentConfigBase
+public sealed record class PresenceConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Presence";
+
     /// <summary>Determines whether radar tracking is enabled.</summary>
     [JsonPropertyName("enable")]
     public bool Enable { get; init; }
@@ -2014,8 +2059,10 @@ public sealed record class PresenceConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines one dynamic detection zone used to aggregate tracked objects into a presence state.</summary>
-public sealed record class PresenceZoneConfig : ShellyComponentConfigBase
+public sealed record class PresenceZoneConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "PresenceZone";
+
     /// <summary>Identifies the PresenceZone component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2047,7 +2094,7 @@ public sealed record class PresenceZoneConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls RGB brightness and color during the configured night period.</summary>
-public sealed record class RGBNightModeConfig : ShellyComponentConfigBase
+public sealed record class RGBNightModeConfig
 {
     /// <summary>Determines whether night-mode limits are applied.</summary>
     [JsonPropertyName("enable")]
@@ -2068,7 +2115,7 @@ public sealed record class RGBNightModeConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines brightness and color applied after a supported double button press.</summary>
-public sealed record class RGBButtonDoublePushConfig : ShellyComponentConfigBase
+public sealed record class RGBButtonDoublePushConfig
 {
     /// <summary>Sets preset brightness, or null to preserve current brightness.</summary>
     [JsonPropertyName("brightness")]
@@ -2081,7 +2128,7 @@ public sealed record class RGBButtonDoublePushConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Groups RGB button-triggered output presets.</summary>
-public sealed record class RGBButtonPresetsConfig : ShellyComponentConfigBase
+public sealed record class RGBButtonPresetsConfig
 {
     /// <summary>Defines the optional double-push preset; null disables it.</summary>
     [JsonPropertyName("button_doublepush")]
@@ -2090,8 +2137,10 @@ public sealed record class RGBButtonPresetsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures RGB startup, input control, timers, night mode, button presets and protection limits.</summary>
-public sealed record class RGBConfig : ShellyComponentConfigBase
+public sealed record class RGBConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "RGB";
+
     /// <summary>Identifies the RGB component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2159,7 +2208,7 @@ public sealed record class RGBConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls RGBCCT brightness, color, color temperature and color model during the night period.</summary>
-public sealed record class RGBCCTNightModeConfig : ShellyComponentConfigBase
+public sealed record class RGBCCTNightModeConfig
 {
     /// <summary>Determines whether night-mode limits are applied.</summary>
     [JsonPropertyName("enable")]
@@ -2188,8 +2237,10 @@ public sealed record class RGBCCTNightModeConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures combined RGB/CCT output startup, timers, transitions and scheduled night behavior.</summary>
-public sealed record class RGBCCTConfig : ShellyComponentConfigBase
+public sealed record class RGBCCTConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "RGBCCT";
+
     /// <summary>Identifies the RGBCCT component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2233,7 +2284,7 @@ public sealed record class RGBCCTConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls RGBW brightness, color and white level during the configured night period.</summary>
-public sealed record class RGBWNightModeConfig : ShellyComponentConfigBase
+public sealed record class RGBWNightModeConfig
 {
     /// <summary>Determines whether night-mode limits are applied.</summary>
     [JsonPropertyName("enable")]
@@ -2258,7 +2309,7 @@ public sealed record class RGBWNightModeConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Defines brightness, RGB color and white level applied after a supported double button press.</summary>
-public sealed record class RGBWButtonDoublePushConfig : ShellyComponentConfigBase
+public sealed record class RGBWButtonDoublePushConfig
 {
     /// <summary>Sets preset brightness, or null to preserve current brightness.</summary>
     [JsonPropertyName("brightness")]
@@ -2275,7 +2326,7 @@ public sealed record class RGBWButtonDoublePushConfig : ShellyComponentConfigBas
 }
 
 /// <summary>Groups RGBW button-triggered output presets.</summary>
-public sealed record class RGBWButtonPresetsConfig : ShellyComponentConfigBase
+public sealed record class RGBWButtonPresetsConfig
 {
     /// <summary>Defines the optional double-push preset; null disables it.</summary>
     [JsonPropertyName("button_doublepush")]
@@ -2284,8 +2335,10 @@ public sealed record class RGBWButtonPresetsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures RGBW startup, input control, timers, night mode, presets and protection limits.</summary>
-public sealed record class RGBWConfig : ShellyComponentConfigBase
+public sealed record class RGBWConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "RGBW";
+
     /// <summary>Identifies the RGBW component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2353,8 +2406,10 @@ public sealed record class RGBWConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures script identity and whether the script starts automatically at boot.</summary>
-public sealed record class ScriptConfig : ShellyComponentConfigBase
+public sealed record class ScriptConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Script";
+
     /// <summary>Identifies the script component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2370,7 +2425,7 @@ public sealed record class ScriptConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures serial framing and hardware direction-control options.</summary>
-public sealed record class SerialPortConfig : ShellyComponentConfigBase
+public sealed record class SerialPortConfig
 {
     /// <summary>Sets the serial bit rate.</summary>
     [JsonPropertyName("baud")]
@@ -2391,7 +2446,7 @@ public sealed record class SerialPortConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures the Modbus RTU server identity for the serial port.</summary>
-public sealed record class SerialModbusServerConfig : ShellyComponentConfigBase
+public sealed record class SerialModbusServerConfig
 {
     /// <summary>Sets the Modbus RTU server address from 1 to 247.</summary>
     [JsonPropertyName("addr")]
@@ -2400,8 +2455,10 @@ public sealed record class SerialModbusServerConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures ownership and framing of a hardware serial port and its optional Modbus role.</summary>
-public sealed record class SerialConfig : ShellyComponentConfigBase
+public sealed record class SerialConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Serial";
+
     /// <summary>Identifies the Serial component instance when firmware includes it in the configuration payload.</summary>
     [JsonPropertyName("id")]
     public int? Id { get; init; }
@@ -2425,8 +2482,10 @@ public sealed record class SerialConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures the user-facing identity of a smoke-sensor component.</summary>
-public sealed record class SmokeConfig : ShellyComponentConfigBase
+public sealed record class SmokeConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Smoke";
+
     /// <summary>Identifies the Smoke component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2438,7 +2497,7 @@ public sealed record class SmokeConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls optional lifecycle counters maintained by the switch.</summary>
-public sealed record class SwitchCountsConfig : ShellyComponentConfigBase
+public sealed record class SwitchCountsConfig
 {
     /// <summary>Determines whether switch lifecycle counters are collected.</summary>
     [JsonPropertyName("enable")]
@@ -2451,8 +2510,10 @@ public sealed record class SwitchCountsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures relay input behavior, startup state, automatic timers, electrical protection and optional counters.</summary>
-public sealed record class SwitchConfig : ShellyComponentConfigBase
+public sealed record class SwitchConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Switch";
+
     /// <summary>Identifies the Switch component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2524,7 +2585,7 @@ public sealed record class SwitchConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures device identity, discoverability, optional hardware and security-related device behavior.</summary>
-public sealed record class SysDeviceConfig : ShellyComponentConfigBase
+public sealed record class SysDeviceConfig
 {
     /// <summary>Sets the user-facing device name.</summary>
     [JsonPropertyName("name")]
@@ -2569,7 +2630,7 @@ public sealed record class SysDeviceConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures timezone and optional geographic coordinates used by schedules and sun-based calculations.</summary>
-public sealed record class SysLocationConfig : ShellyComponentConfigBase
+public sealed record class SysLocationConfig
 {
     /// <summary>Sets the IANA timezone identifier, or null when unavailable.</summary>
     [JsonPropertyName("tz")]
@@ -2586,7 +2647,7 @@ public sealed record class SysLocationConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls one debug-log streaming destination.</summary>
-public sealed record class SysDebugToggleConfig : ShellyComponentConfigBase
+public sealed record class SysDebugToggleConfig
 {
     /// <summary>Determines whether this debug-log destination is enabled.</summary>
     [JsonPropertyName("enable")]
@@ -2595,7 +2656,7 @@ public sealed record class SysDebugToggleConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures the UDP destination for streamed debug logs.</summary>
-public sealed record class SysDebugUdpConfig : ShellyComponentConfigBase
+public sealed record class SysDebugUdpConfig
 {
     /// <summary>Sets the UDP log destination; null disables UDP log streaming.</summary>
     [JsonPropertyName("addr")]
@@ -2604,7 +2665,7 @@ public sealed record class SysDebugUdpConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls debug-log streaming over supported transports and local files.</summary>
-public sealed record class SysDebugConfig : ShellyComponentConfigBase
+public sealed record class SysDebugConfig
 {
     /// <summary>Controls debug logs sent over MQTT.</summary>
     [JsonPropertyName("mqtt")]
@@ -2625,7 +2686,7 @@ public sealed record class SysDebugConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures RPC communication over UDP.</summary>
-public sealed record class SysRpcUdpConfig : ShellyComponentConfigBase
+public sealed record class SysRpcUdpConfig
 {
     /// <summary>Sets the default UDP destination used for RPC traffic.</summary>
     [JsonPropertyName("dst_addr")]
@@ -2638,7 +2699,7 @@ public sealed record class SysRpcUdpConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures the time server used for clock synchronization.</summary>
-public sealed record class SysSntpConfig : ShellyComponentConfigBase
+public sealed record class SysSntpConfig
 {
     /// <summary>Sets the SNTP host and optional port used for time synchronization.</summary>
     [JsonPropertyName("server")]
@@ -2647,8 +2708,11 @@ public sealed record class SysSntpConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures device identity, location, diagnostics, UDP RPC and time synchronization.</summary>
-public sealed record class SysConfig : ShellyComponentConfigBase
+public sealed record class SysConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Sys";
+
+
     /// <summary>Groups device identity, profile, add-on and security settings.</summary>
     [JsonPropertyName("device")]
     public SysDeviceConfig? Device { get; init; }
@@ -2680,8 +2744,10 @@ public sealed record class SysConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures temperature reporting sensitivity and measurement correction.</summary>
-public sealed record class TemperatureConfig : ShellyComponentConfigBase
+public sealed record class TemperatureConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Temperature";
+
     /// <summary>Identifies the Temperature component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2701,8 +2767,10 @@ public sealed record class TemperatureConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures voltage reporting, device-specific input range and optional value transformation.</summary>
-public sealed record class VoltmeterConfig : ShellyComponentConfigBase
+public sealed record class VoltmeterConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Voltmeter";
+
     /// <summary>Identifies the Voltmeter component instance.</summary>
     [JsonPropertyName("id")]
     public int Id { get; init; }
@@ -2726,7 +2794,7 @@ public sealed record class VoltmeterConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls optional Wi-Fi range-extender functionality.</summary>
-public sealed record class WifiRangeExtenderConfig : ShellyComponentConfigBase
+public sealed record class WifiRangeExtenderConfig
 {
     /// <summary>Determines whether range-extender functionality is enabled.</summary>
     [JsonPropertyName("enable")]
@@ -2735,7 +2803,7 @@ public sealed record class WifiRangeExtenderConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures the device-hosted Wi-Fi access point without exposing write-only credentials.</summary>
-public sealed record class WifiAccessPointConfig : ShellyComponentConfigBase
+public sealed record class WifiAccessPointConfig
 {
     /// <summary>Sets the access-point SSID, or null to restore the device default.</summary>
     [JsonPropertyName("ssid")]
@@ -2756,7 +2824,7 @@ public sealed record class WifiAccessPointConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures one Wi-Fi station profile without exposing its write-only password.</summary>
-public sealed record class WifiStationConfig : ShellyComponentConfigBase
+public sealed record class WifiStationConfig
 {
     /// <summary>Sets the network SSID.</summary>
     [JsonPropertyName("ssid")]
@@ -2793,7 +2861,7 @@ public sealed record class WifiStationConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls when the Wi-Fi client scans and roams to a stronger access point.</summary>
-public sealed record class WifiRoamConfig : ShellyComponentConfigBase
+public sealed record class WifiRoamConfig
 {
     /// <summary>Sets the RSSI threshold that triggers a search for a better access point.</summary>
     [JsonPropertyName("rssi_thr")]
@@ -2806,8 +2874,10 @@ public sealed record class WifiRoamConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures the device access point, primary/fallback Wi-Fi stations and roaming behavior.</summary>
-public sealed record class WifiConfig : ShellyComponentConfigBase
+public sealed record class WifiConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "WiFi";
+
     /// <summary>Configures the device-hosted access point.</summary>
     [JsonPropertyName("ap")]
     public WifiAccessPointConfig? AccessPoint { get; init; }
@@ -2827,8 +2897,10 @@ public sealed record class WifiConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Configures the persistent outbound WebSocket RPC connection.</summary>
-public sealed record class OutboundWsConfig : ShellyComponentConfigBase
+public sealed record class OutboundWsConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Ws";
+
     /// <summary>Determines whether the outbound WebSocket connection is enabled.</summary>
     [JsonPropertyName("enable")]
     public bool Enable { get; init; }
@@ -2844,8 +2916,10 @@ public sealed record class OutboundWsConfig : ShellyComponentConfigBase
 }
 
 /// <summary>Controls whether Zigbee connectivity is enabled on the device.</summary>
-public sealed record class ZigbeeConfig : ShellyComponentConfigBase
+public sealed record class ZigbeeConfig : ShellyComponentConfigBase, IShellyComponentConfig
 {
+    public static string ComponentName => "Zigbee";
+
     /// <summary>Determines whether the Zigbee subsystem is enabled.</summary>
     [JsonPropertyName("enable")]
     public bool Enable { get; init; }

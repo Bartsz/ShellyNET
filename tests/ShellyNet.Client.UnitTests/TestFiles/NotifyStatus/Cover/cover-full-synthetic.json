@@ -1,0 +1,67 @@
+{
+  "src": "shelly-test-device",
+  "dst": "_",
+  "method": "NotifyStatus",
+  "params": {
+    "ts": 123456.12,
+    "cover:0": {
+      "id": 0,
+      "source": "WS_in",
+      "tag": "test-cover",
+      "state": "opening",
+      "apower": 145.75,
+      "voltage": 229.8,
+      "current": 0.712,
+      "pf": 0.89,
+      "freq": 50.02,
+      "aenergy": {
+        "total": 987.654,
+        "by_minute": [
+          320,
+          450,
+          610
+        ],
+        "minute_ts": 123456
+      },
+      "current_pos": 42.5,
+      "target_pos": 85.0,
+      "move_timeout": 45.5,
+      "move_started_at": 123456.12,
+      "pos_control": true,
+      "last_direction": "open",
+      "temperature": {
+        "tC": 54.3,
+        "tF": 129.74
+      },
+      "slat_pos": 37.5,
+      "errors": [
+        "overtemp",
+        "overpower",
+        "overvoltage",
+        "undervoltage",
+        "overcurrent",
+        "obstruction",
+        "safety_switch",
+        "bad_feedback:rotating_in_wrong_direction",
+        "bad_feedback:both_directions_active",
+        "bad_feedback:failed_to_halt",
+        "cal_abort:timeout_open",
+        "cal_abort:timeout_close",
+        "cal_abort:safety",
+        "cal_abort:ext_command",
+        "cal_abort:bad_feedback",
+        "cal_abort:implausible_time_to_fully_close",
+        "cal_abort:implausible_time_to_fully_open",
+        "cal_abort:implausible_power_consumption_in_close_dir",
+        "cal_abort:implausible_power_consumption_in_open_dir",
+        "cal_abort:too_many_steps_to_close",
+        "cal_abort:too_few_steps_to_close",
+        "cal_abort:implausible_time_to_fully_close_w_steps",
+        "cal_abort:implausible_step_duration_in_open_dir",
+        "cal_abort:too_many_steps_to_open",
+        "cal_abort:too_few_steps_to_open",
+        "cal_abort:implausible_time_to_fully_open_w_steps"
+      ]
+    }
+  }
+}

@@ -1,49 +1,60 @@
 ﻿using ShellyNET.Client.Model;
-using System.Threading.Channels;
+using System.Buffers;
 
-namespace ShellyNET.Client;
+namespace ShellyNET.Client.Parsers;
 
-public partial class ShellyClient
+public readonly struct ShellyNotifyEventParseResult : IDisposable
 {
-    public async ValueTask<ShellyComponentEvent> GetShellyEvent(CancellationToken ct)
+    private readonly ArrayPool<ShellyComponentEvent>? _eventsPool;
+
+    private readonly ShellyComponentEvent[] _events { get; }
+
+    public ShellyNotifyEventParseResult(ShellyComponentEvent[] events, ArrayPool<ShellyComponentEvent> eventsPool, ushort eventsCount)
     {
-        while (true)
-        {
-            return await _shellyEventsChannel.Reader.ReadAsync(ct).ConfigureAwait(false);
-        }
+        _events = events;
+        _eventsPool = eventsPool;
+        EventsCount = eventsCount;
     }
 
-    private readonly Channel<ShellyComponentEvent> _shellyEventsChannel = Channel.CreateBounded<ShellyComponentEvent>(new BoundedChannelOptions(128)
+    public ushort EventsCount { get; }
+    public ReadOnlySpan<ShellyComponentEvent> EventsSpan => _events.AsSpan(0, EventsCount);
+    public void Dispose()
     {
-        AllowSynchronousContinuations = false,
-        SingleReader = true,
-        SingleWriter = true,
-        FullMode = BoundedChannelFullMode.Wait
-    });
+        _eventsPool?.Return(_events, clearArray: true);
+    }
+}
 
-    private readonly ShellyComponentEvent[] _pendingEventUpdates = new ShellyComponentEvent[128];
-    private byte _pendingEventsCount = 0;
+public class ShellyNotifyEventParser
+{
+    private readonly ArrayPool<ShellyComponentEvent> _eventsPool = ArrayPool<ShellyComponentEvent>.Shared;
+    private ShellyComponentEvent[] _events = [];
+    private ushort _eventsCount = 0;
 
-    internal void ProcessNotifyEventMessage(Memory<byte> message, CancellationToken ct)
+    public ShellyNotifyEventParseResult ProcessNotifyEventMessage(Memory<byte> message, CancellationToken ct)
     {
-        if (ct.IsCancellationRequested) return;
+        if (ct.IsCancellationRequested) return new();
 
         var reader = new Utf8JsonReader(message.Span);
         DateTimeOffset timestamp = default;
 
-        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject) return;
+        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject) return new();
+
+        _eventsCount = 0;
+        _events = _eventsPool.Rent(4);
 
         // go to events array
-        while (reader.Read())
-        {
-            if (reader.TokenType != JsonTokenType.PropertyName) reader.Read();
-            if (reader.ValueSpan.SequenceEqual("events"u8)) break;
-        }
+        OpenEventsArray(ref reader);
+        ParseEvents(ref reader);
 
+        return new(_events, _eventsPool, _eventsCount);
+    }
+
+    private void ParseEvents(ref Utf8JsonReader reader)
+    {
         if (reader.ValueSpan.SequenceEqual("events"u8))
         {
             reader.Read(); // opened array "["
-
+            if (reader.TokenType != JsonTokenType.StartArray) return;
             // Iterate events
             // during first read, moves to "{"
             // during following reads, moves from "}" to "{"
@@ -54,6 +65,8 @@ public partial class ShellyClient
                 ComponentType componentType = ComponentType.Unkown;
                 byte? id = null;
                 ComponentEvent componentEvent = ComponentEvent.Unkown;
+                ComponentType targetComponent = ComponentType.Unkown;
+                bool restartRequired = false;
                 long eventTimestamp = 0;
 
                 // read event data 
@@ -63,11 +76,7 @@ public partial class ShellyClient
                     bool readProperty = false;
                     if (reader.TokenType == JsonTokenType.EndArray) return;
                     if (reader.TokenType == JsonTokenType.EndObject) break;
-                    if (reader.TokenType != JsonTokenType.PropertyName)
-                    {
-                        reader.Read();
-                        continue;
-                    }
+                    if (reader.TokenType != JsonTokenType.PropertyName) { reader.Read(); continue; }
 
                     if (reader.ValueSpan.SequenceEqual("component"u8))
                     {
@@ -93,6 +102,22 @@ public partial class ShellyClient
                         readProperty = true;
                     }
 
+                    if (reader.ValueSpan.SequenceEqual("target"u8))
+                    {
+                        reader.Read();
+                        targetComponent = GetComponentType(reader.ValueSpan);
+                        reader.Read();
+                        readProperty = true;
+                    }
+
+                    if (reader.ValueSpan.SequenceEqual("restart_required"u8))
+                    {
+                        reader.Read();
+                        restartRequired = reader.GetBoolean();
+                        reader.Read();
+                        readProperty = true;
+                    }
+
                     if (reader.ValueSpan.SequenceEqual("ts"u8))
                     {
                         reader.Read();
@@ -106,11 +131,7 @@ public partial class ShellyClient
                     {
                         var datetimestamp = DateTimeOffset.FromUnixTimeMilliseconds(eventTimestamp);
                         var eventMsg = new ShellyComponentEvent(datetimestamp, id.Value, componentType, componentEvent);
-                        var enqueued = EnqueueEventMessage(eventMsg);
-                        if (!enqueued) return;
-                        // consumer couldn't clear 128 messages buffer and 128 messages queue
-                        // at this point we don't care much. Event though we are connected, 
-                        // consumer is not responding
+                        AddEvent(eventMsg);
                     }
 
                     if (!readProperty)
@@ -121,6 +142,15 @@ public partial class ShellyClient
                     if (reader.TokenType == JsonTokenType.EndObject) break;
                 }
             }
+        }
+    }
+
+    private static void OpenEventsArray(ref Utf8JsonReader reader)
+    {
+        while (reader.Read())
+        {
+            if (reader.TokenType != JsonTokenType.PropertyName) reader.Read();
+            if (reader.ValueSpan.SequenceEqual("events"u8)) break;
         }
     }
 
@@ -175,28 +205,62 @@ public partial class ShellyClient
 
     private ComponentEvent GetComponentEvent(ReadOnlySpan<byte> eventValue)
     {
-        if (eventValue.SequenceEqual("long_push"u8)) return ComponentEvent.LongPush;
-        if (eventValue.SequenceEqual("single_push"u8)) return ComponentEvent.SinglePush;
-        if (eventValue.SequenceEqual("double_push"u8)) return ComponentEvent.DoublePush;
-        if (eventValue.SequenceEqual("triple_push"u8)) return ComponentEvent.TriplePush;
         if (eventValue.SequenceEqual("btn_down"u8)) return ComponentEvent.BtnDown;
         if (eventValue.SequenceEqual("btn_up"u8)) return ComponentEvent.BtnUp;
+        if (eventValue.SequenceEqual("single_push"u8)) return ComponentEvent.SinglePush;
+        if (eventValue.SequenceEqual("double_push"u8)) return ComponentEvent.DoublePush;
+        if (eventValue.SequenceEqual("long_push"u8)) return ComponentEvent.LongPush;
+        if (eventValue.SequenceEqual("triple_push"u8)) return ComponentEvent.TriplePush;
         return ComponentEvent.Unkown;
     }
 
 
     /// <summary>Writes a status change immediately when channel capacity is available and delegates only backpressure to the asynchronous path.</summary>
-    private bool EnqueueEventMessage(ShellyComponentEvent stateChange)
+    private void AddEvent(ShellyComponentEvent stateChange)
     {
-        if (_shellyEventsChannel.Writer.TryWrite(stateChange)) return true;
+        if (_eventsCount < _events.Length)
+        {
+            _events[_eventsCount++] = stateChange;
+            return;
+        }
 
-        if (_pendingEventsCount == 128) return false;
-        //return SendShellyStateChangeMsgAsync(stateChange, CancellationToken.None);
-        _pendingEventUpdates[_pendingEventsCount] = stateChange;
-        _pendingEventsCount++;
+        var old = _events;
+        var next = _eventsPool.Rent(old.Length * 2);
 
-        return true;
+        old.AsSpan(0, _eventsCount).CopyTo(next);
+
+        _eventsPool.Return(old);
+        _events = next;
     }
+
+
+    /// <summary>Converts a Shelly Unix timestamp to millisecond precision without temporary strings.</summary>
+    private static long ParseUnixTimestamp(ReadOnlySpan<byte> value)
+    {
+        int dot = value.Length;
+
+        if (dot >= 2 && value[^2] == (byte)'.') dot -= 2;
+        else if (dot >= 3 && value[^3] == (byte)'.') dot -= 3;
+        else if (dot >= 4 && value[^4] == (byte)'.') dot -= 4;
+
+        ReadOnlySpan<byte> integerPart = value[..dot];
+
+        int seconds = int.Parse(integerPart, NumberStyles.None, CultureInfo.InvariantCulture);
+        int ms = 0;
+
+        int fractionLength = value.Length - dot - 1;
+
+        if (fractionLength > 0)
+        {
+            var fractionSpan = value[(dot + 1)..];
+            ms = int.Parse(fractionSpan) * (fractionLength == 2 ? 10 : fractionLength == 1 ? 100 : 1);
+        }
+
+        long epochMs = (long)seconds * 1000 + ms;
+
+        return epochMs;
+    }
+
 
 }
 

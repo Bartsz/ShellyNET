@@ -1,0 +1,40 @@
+{
+  "src": "shellyplusi4-78421c53c500",
+  "dst": "_",
+  "method": "NotifyStatus",
+  "params": {
+    "ts": 123456.12,
+    "switch:1": {
+      "id": 1,
+      "source": "WS_in",
+      "tag": null,
+      "output": false,
+      "apower": 0,
+      "voltage": 225.9,
+      "current": 0,
+      "freq": 50,
+      "aenergy": {
+        "total": 11.679,
+        "by_minute": [ 0, 0, 0 ],
+        "minute_ts": 123456
+      },
+      "ret_aenergy": {
+        "total": 5.817,
+        "by_minute": [ 0, 0, 0 ],
+        "minute_ts": 123456
+      },
+      "counts": {
+        "on_time": 2100,
+        "on_time_rst_ts": 123456,
+        "switch_on": 10,
+        "switch_on_rst_ts": 123456,
+        "on_above_thr": 1500,
+        "on_above_thr_rst_ts": 123456
+      },
+      "temperature": {
+        "tC": 53.3,
+        "tF": 127.9
+      }
+    }
+  }
+}

@@ -3,7 +3,15 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType> 
   </PropertyGroup>
- 
+
+  <ItemGroup>
+    <Using Include="BenchmarkDotNet.Columns"/>
+    <Using Include="BenchmarkDotNet.Order"/>
+    <Using Include="System.Buffers"/>
+    <Using Include="System.Buffers.Text"/>
+    <Using Include="System.Text"/>
+    
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />

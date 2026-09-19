@@ -1,0 +1,126 @@
+{
+  "id": 5,
+  "src": "shellyplusi4-78421c53c500",
+  "dst": "_",
+  "result": {
+    "ble": {
+      "enable": true,
+      "rpc": { "enable": false }
+    },
+    "cloud": {
+      "enable": true,
+      "server": "shelly-api-eu.shelly.cloud:6022/jrpc"
+    },
+    "input:0": {
+      "id": 0,
+      "name": "Input 1",
+      "type": "button",
+      "enable": true,
+      "invert": false,
+      "factory_reset": true
+    },
+    "input:1": {
+      "id": 1,
+      "name": null,
+      "type": "switch",
+      "enable": true,
+      "invert": true,
+      "factory_reset": true
+    },
+    "input:2": {
+      "id": 2,
+      "name": null,
+      "type": "switch",
+      "enable": true,
+      "invert": false,
+      "factory_reset": true
+    },
+    "input:3": {
+      "id": 3,
+      "name": null,
+      "type": "switch",
+      "enable": true,
+      "invert": false,
+      "factory_reset": true
+    },
+    "mqtt": {
+      "enable": false,
+      "server": null,
+      "client_id": "shellyplusi4-78421c53c500",
+      "user": null,
+      "ssl_ca": null,
+      "topic_prefix": "shellyplusi4-78421c53c500",
+      "rpc_ntf": true,
+      "status_ntf": false,
+      "use_client_cert": false,
+      "enable_rpc": true,
+      "enable_control": true
+    },
+    "sys": {
+      "device": {
+        "name": "User Device Name",
+        "mac": "78421C53C500",
+        "fw_id": "20260311-095904/1.7.5-g9979d16",
+        "discoverable": true,
+        "eco_mode": false,
+        "addon_type": null
+      },
+      "location": {
+        "tz": "Europe/Warsaw",
+        "lat": 50.018100,
+        "lon": 19.956000
+      },
+      "debug": {
+        "level": 2,
+        "file_level": null,
+        "mqtt": { "enable": false },
+        "websocket": { "enable": true },
+        "udp": { "addr": null }
+      },
+      "ui_data": {},
+      "rpc_udp": {
+        "dst_addr": null,
+        "listen_port": null
+      },
+      "sntp": { "server": "time.cloudflare.com" },
+      "cfg_rev": 17
+    },
+    "wifi": {
+      "ap": {
+        "ssid": "ShellyPlusI4-78421C53C500",
+        "is_open": false,
+        "enable": true,
+        "range_extender": { "enable": false }
+      },
+      "sta": {
+        "ssid": "TP-Link_3FAC",
+        "is_open": false,
+        "enable": true,
+        "ipv4mode": "dhcp",
+        "ip": null,
+        "netmask": null,
+        "gw": null,
+        "nameserver": null
+      },
+      "sta1": {
+        "ssid": null,
+        "is_open": true,
+        "enable": false,
+        "ipv4mode": "dhcp",
+        "ip": null,
+        "netmask": null,
+        "gw": null,
+        "nameserver": null
+      },
+      "roam": {
+        "rssi_thr": -80,
+        "interval": 60
+      }
+    },
+    "ws": {
+      "enable": false,
+      "server": null,
+      "ssl_ca": "ca.pem"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "src": "shellyplusi4-78421c53c500",
+  "dst": "_",
+  "method": "NotifyStatus",
+  "params": {
+    "ts": 123456.12,
+    "input:1": {
+      "id": 1,
+      "source": "WS_in",
+      "tag": null,
+      "state": false,
+      "percent": 20,
+      "xpercent": 20,
+      "counts": {
+        "total": 2100,
+        "xtotal": 123456,
+        "by_minute": [ 10, 2, 3 ],
+        "xby_minute": [ 10, 2, 3 ],
+        "minute_ts": 123456
+      },
+      "freq": 50,
+      "xfreq": 50,
+      "errors": [ "read", "out_of_range" ]
+    }
+  }
+}

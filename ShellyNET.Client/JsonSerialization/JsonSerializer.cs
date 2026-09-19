@@ -1,8 +1,40 @@
 ﻿using ShellyNET.Client.Model;
 using ShellyNET.Client.Model.Messages;
-using System.Text.Json.Serialization;
 
 namespace ShellyNET.Client;
+
+
+
+/// <summary>Provides source-generated JSON metadata for Shelly RPC parameter and result models.</summary>
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(CbSetParams))]
+[JsonSerializable(typeof(CbSetResult))]
+[JsonSerializable(typeof(CbGetLogParams))]
+[JsonSerializable(typeof(CbGetLogResult))]
+[JsonSerializable(typeof(CctSetParams))]
+[JsonSerializable(typeof(CctToggleParams))]
+[JsonSerializable(typeof(CoverCalibrateParams))]
+[JsonSerializable(typeof(CoverOpenParams))]
+[JsonSerializable(typeof(CoverCloseParams))]
+[JsonSerializable(typeof(CoverStopParams))]
+[JsonSerializable(typeof(CoverGoToPositionParams))]
+[JsonSerializable(typeof(LightSetParams))]
+[JsonSerializable(typeof(LightToggleParams))]
+[JsonSerializable(typeof(LightCalibrateParams))]
+[JsonSerializable(typeof(RgbSetParams))]
+[JsonSerializable(typeof(RgbToggleParams))]
+[JsonSerializable(typeof(RgbCctSetParams))]
+[JsonSerializable(typeof(RgbCctToggleParams))]
+[JsonSerializable(typeof(RgbWSetParams))]
+[JsonSerializable(typeof(RgbWToggleParams))]
+[JsonSerializable(typeof(ShellyRebootParams))]
+[JsonSerializable(typeof(SwitchSetParams))]
+[JsonSerializable(typeof(SwitchSetResult))]
+[JsonSerializable(typeof(SwitchToggleParams))]
+[JsonSerializable(typeof(SwitchToggleResult))]
+[JsonSerializable(typeof(SmokeMuteParams))]
+[JsonSerializable(typeof(SysSetTimeParams))] 
+public partial class ShellyRpcJsonContext : JsonSerializerContext;
 
 
 /// <summary>Provides compile-time JSON metadata for all Shelly.GetConfig models, enabling reflection-free serialization and deserialization.</summary>
@@ -79,14 +111,13 @@ namespace ShellyNET.Client;
 [JsonSerializable(typeof(DevicePowerConfig))]
 [JsonSerializable(typeof(EM1DataConfig))]
 [JsonSerializable(typeof(EMDataConfig))]
-[JsonSerializable(typeof(MbRtuClientConfig))]
 [JsonSerializable(typeof(EMReverseConfig))]
 [JsonSerializable(typeof(EMPhaseAlarmConfig))]
 [JsonSerializable(typeof(EMAlarmsConfig))]
 [JsonSerializable(typeof(EMConfig))]
 [JsonSerializable(typeof(ElectricalAlarmsConfig))]
 [JsonSerializable(typeof(EM1Config))]
-[JsonSerializable(typeof(EthConfig))]
+[JsonSerializable(typeof(EthernetConfig))]
 [JsonSerializable(typeof(FloodConfig))]
 [JsonSerializable(typeof(HumidityConfig))]
 [JsonSerializable(typeof(IlluminanceConfig))]
@@ -143,13 +174,47 @@ namespace ShellyNET.Client;
 [JsonSerializable(typeof(WifiConfig))]
 [JsonSerializable(typeof(OutboundWsConfig))]
 [JsonSerializable(typeof(ZigbeeConfig))]
+[JsonSerializable(typeof(SystemStatus))]
 public sealed partial class ShellyConfigsJsonSerializerContext : JsonSerializerContext;
 
 /// <summary>Provides source-generated System.Text.Json metadata used by the Shelly client.</summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
-[JsonSerializable(typeof(ShellyDeviceInfo))] 
+[JsonSerializable(typeof(ShellyDeviceInfo))]
 [JsonSerializable(typeof(ShellyRpcError))]
 [JsonSerializable(typeof(ShellyAuthChallenge))]
+
+[JsonSerializable(typeof(RpcRequest<EmptyRpcParameters>))]
+[JsonSerializable(typeof(RpcRequest<CbSetParams>))]
+[JsonSerializable(typeof(RpcRequest<CbGetLogParams>))]
+[JsonSerializable(typeof(RpcRequest<CctSetParams>))]
+[JsonSerializable(typeof(RpcRequest<CctToggleParams>))]
+[JsonSerializable(typeof(RpcRequest<CoverCalibrateParams>))]
+[JsonSerializable(typeof(RpcRequest<CoverOpenParams>))]
+[JsonSerializable(typeof(RpcRequest<CoverCloseParams>))]
+[JsonSerializable(typeof(RpcRequest<CoverStopParams>))]
+[JsonSerializable(typeof(RpcRequest<CoverGoToPositionParams>))]
+[JsonSerializable(typeof(RpcRequest<LightSetParams>))]
+[JsonSerializable(typeof(RpcRequest<LightToggleParams>))]
+[JsonSerializable(typeof(RpcRequest<LightCalibrateParams>))]
+[JsonSerializable(typeof(RpcRequest<RgbSetParams>))]
+[JsonSerializable(typeof(RpcRequest<RgbToggleParams>))]
+[JsonSerializable(typeof(RpcRequest<RgbCctSetParams>))]
+[JsonSerializable(typeof(RpcRequest<RgbCctToggleParams>))]
+[JsonSerializable(typeof(RpcRequest<RgbWSetParams>))]
+[JsonSerializable(typeof(RpcRequest<RgbWToggleParams>))]
+[JsonSerializable(typeof(RpcRequest<ShellyRebootParams>))]
+[JsonSerializable(typeof(RpcRequest<SwitchSetParams>))]
+[JsonSerializable(typeof(RpcRequest<SwitchToggleParams>))]
+[JsonSerializable(typeof(RpcRequest<SmokeMuteParams>))]
+[JsonSerializable(typeof(RpcRequest<SysSetTimeParams>))]
+
+[JsonSerializable(typeof(CbSetResult))]
+[JsonSerializable(typeof(CbGetLogResult))]
+[JsonSerializable(typeof(SwitchSetResult))]
+[JsonSerializable(typeof(SwitchToggleResult))]
+[JsonSerializable(typeof(DeviceUpdateResult))]
+[JsonSerializable(typeof(FirmwareVersionInfo))]
+[JsonSerializable(typeof(NullRpcResponse))]
 internal partial class ShellyJsonSerializerContext : JsonSerializerContext;
 
 
@@ -175,4 +240,57 @@ internal sealed class ShellyNonceJsonConverter : JsonConverter<string>
     {
         writer.WriteStringValue(value);
     }
+}
+
+
+
+/// <summary>Represents an RGB color in the three-channel array format required by Shelly RPC.</summary>
+/// <param name="R">Red channel intensity in the 0..255 range.</param>
+/// <param name="G">Green channel intensity in the 0..255 range.</param>
+/// <param name="B">Blue channel intensity in the 0..255 range.</param>
+[JsonConverter(typeof(Rgb24JsonConverter))]
+public readonly record struct Rgb24(byte R, byte G, byte B);
+
+/// <summary>Converts <see cref="Rgb24"/> values to and from Shelly's three-element JSON array representation.</summary>
+public sealed class Rgb24JsonConverter : JsonConverter<Rgb24>
+{
+    /// <summary>Reads a Shelly RGB array and returns the corresponding strongly typed color value.</summary>
+    public override Rgb24 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartArray) throw new JsonException("Expected RGB array.");
+        if (!reader.Read() || reader.TokenType != JsonTokenType.Number || !reader.TryGetByte(out var red)) throw new JsonException("Invalid red channel.");
+        if (!reader.Read() || reader.TokenType != JsonTokenType.Number || !reader.TryGetByte(out var green)) throw new JsonException("Invalid green channel.");
+        if (!reader.Read() || reader.TokenType != JsonTokenType.Number || !reader.TryGetByte(out var blue)) throw new JsonException("Invalid blue channel.");
+        if (!reader.Read() || reader.TokenType != JsonTokenType.EndArray) throw new JsonException("RGB array must contain exactly three values.");
+
+        var color = new Rgb24(red, green, blue);
+        return color;
+    }
+
+    /// <summary>Writes an RGB value using Shelly's compact three-element JSON array representation.</summary>
+    public override void Write(Utf8JsonWriter writer, Rgb24 value, JsonSerializerOptions options)
+    {
+        writer.WriteStartArray();
+        writer.WriteNumberValue(value.R);
+        writer.WriteNumberValue(value.G);
+        writer.WriteNumberValue(value.B);
+        writer.WriteEndArray();
+    }
+}
+
+/// <summary>Specifies the active color model used by an RGBCCT component.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<RgbCctMode>))]
+public enum RgbCctMode : byte
+{
+    /// <summary>Uses the RGB channels to control color.</summary>
+    [JsonStringEnumMemberName("rgb")]
+    Rgb,
+
+    /// <summary>Uses color temperature to control color.</summary>
+    [JsonStringEnumMemberName("cct")]
+    Cct,
+
+    /// <summary>Uses color temperature to control color.</summary>
+    [JsonStringEnumMemberName("unkown")]
+    Unknown,
 }

@@ -3,7 +3,7 @@
   "dst": "_",
   "method": "NotifyStatus",
   "params": {
-    "ts": 1789468476.40,
+    "ts": 123456.120,
     "switch:1": {
       "id": 1,
       "source": "WS_in",
@@ -15,29 +15,21 @@
       "freq": 50,
       "aenergy": {
         "total": 11.679,
-        "by_minute": [
-          0,
-          0,
-          0
-        ],
-        "minute_ts": 1654511972
+        "by_minute": [ 0, 0, 0 ],
+        "minute_ts": 123456
       },
       "ret_aenergy": {
         "total": 5.817,
-        "by_minute": [
-          0,
-          0,
-          0
-        ],
-        "minute_ts": 1654511615
+        "by_minute": [ 0, 0, 0 ],
+        "minute_ts": 123456
       },
       "counts": {
         "on_time": 2100,
-        "on_time_rst_ts": 1654512115,
+        "on_time_rst_ts": 123456,
         "switch_on": 10,
-        "switch_on_rst_ts": 1654513510,
+        "switch_on_rst_ts": 123456,
         "on_above_thr": 1500,
-        "on_above_thr_rst_ts": 1654514611
+        "on_above_thr_rst_ts": 123456
       },
       "temperature": {
         "tC": 53.3,

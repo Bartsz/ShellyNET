@@ -1,0 +1,195 @@
+{
+  "src": "shelly-test-device",
+  "dst": "_",
+  "method": "NotifyStatus",
+  "params": {
+    "ts": 123456.12,
+
+    "input:0": {
+      "id": 0,
+      "state": true,
+      "percent": 67.5,
+      "xpercent": 135.0,
+      "counts": {
+        "total": 123456,
+        "xtotal": 246912.5,
+        "by_minute": [
+          12,
+          34,
+          56
+        ],
+        "xby_minute": [
+          24.5,
+          68.5,
+          112.5
+        ],
+        "minute_ts": 123456
+      },
+      "freq": 12.75,
+      "xfreq": 25.5,
+      "errors": [
+        "read",
+        "out_of_range"
+      ]
+    },
+
+    "light:0": {
+      "id": 0,
+      "source": "WS_in",
+      "tag": "test-light",
+      "output": true,
+      "brightness": 73,
+      "timer_started_at": 123456.12,
+      "timer_duration": 120.5,
+      "transition": {
+        "target": {
+          "output": false,
+          "brightness": 25
+        },
+        "started_at": 123456.12,
+        "duration": 2.5
+      },
+      "temperature": {
+        "tC": 48.75,
+        "tF": 119.75
+      },
+      "aenergy": {
+        "total": 1234.567,
+        "by_minute": [
+          125,
+          250,
+          375
+        ],
+        "minute_ts": 123456
+      },
+      "apower": 37.85,
+      "voltage": 231.7,
+      "current": 0.184,
+      "calibration": {
+        "progress": 67.5
+      },
+      "flags": [
+        "no_load",
+        "uncalibrated"
+      ],
+      "errors": [
+        "overcurrent",
+        "overvoltage",
+        "overpower",
+        "undervoltage",
+        "overtemp",
+        "unsupported_load",
+        "cal_abort:interrupted",
+        "cal_abort:power_read",
+        "cal_abort:no_load",
+        "cal_abort:no_synchro",
+        "cal_abort:non_dimmable",
+        "cal_abort:overpower",
+        "cal_abort:unsupported_load"
+      ]
+    },
+
+    "cover:0": {
+      "id": 0,
+      "source": "WS_in",
+      "tag": "test-cover",
+      "state": "opening",
+      "apower": 145.75,
+      "voltage": 229.8,
+      "current": 0.712,
+      "pf": 0.89,
+      "freq": 50.02,
+      "aenergy": {
+        "total": 987.654,
+        "by_minute": [
+          320,
+          450,
+          610
+        ],
+        "minute_ts": 123456
+      },
+      "current_pos": 42.5,
+      "target_pos": 85.0,
+      "move_timeout": 45.5,
+      "move_started_at": 123456.12,
+      "pos_control": true,
+      "last_direction": "open",
+      "temperature": {
+        "tC": 54.3,
+        "tF": 129.74
+      },
+      "slat_pos": 37.5,
+      "errors": [
+        "overtemp",
+        "overpower",
+        "overvoltage",
+        "undervoltage",
+        "overcurrent",
+        "obstruction",
+        "safety_switch",
+        "bad_feedback:rotating_in_wrong_direction",
+        "bad_feedback:both_directions_active",
+        "bad_feedback:failed_to_halt",
+        "cal_abort:timeout_open",
+        "cal_abort:timeout_close",
+        "cal_abort:safety",
+        "cal_abort:ext_command",
+        "cal_abort:bad_feedback",
+        "cal_abort:implausible_time_to_fully_close",
+        "cal_abort:implausible_time_to_fully_open",
+        "cal_abort:implausible_power_consumption_in_close_dir",
+        "cal_abort:implausible_power_consumption_in_open_dir",
+        "cal_abort:too_many_steps_to_close",
+        "cal_abort:too_few_steps_to_close",
+        "cal_abort:implausible_time_to_fully_close_w_steps",
+        "cal_abort:implausible_step_duration_in_open_dir",
+        "cal_abort:too_many_steps_to_open",
+        "cal_abort:too_few_steps_to_open",
+        "cal_abort:implausible_time_to_fully_open_w_steps"
+      ]
+    },
+
+    "pm1:0": {
+      "id": 0,
+      "voltage": 228.6,
+      "current": 1.437,
+      "apower": 302.45,
+      "aprtpower": 328.47,
+      "pf": 0.921,
+      "freq": 49.98,
+      "aenergy": {
+        "total": 4321.765,
+        "by_minute": [
+          1260,
+          1185,
+          1095
+        ],
+        "minute_ts": 123456
+      },
+      "ret_aenergy": {
+        "total": 321.987,
+        "by_minute": [
+          120,
+          95,
+          70
+        ],
+        "minute_ts": 123456
+      },
+      "errors": [
+        "out_of_range:voltage",
+        "out_of_range:current",
+        "power_meter_failure",
+        "out_of_range:aprtpower",
+        "out_of_range:apower"
+      ],
+      "flags": [
+        "overcurrent",
+        "overvoltage",
+        "overpower",
+        "undervoltage",
+        "undercurrent",
+        "underpower"
+      ]
+    }
+  }
+}

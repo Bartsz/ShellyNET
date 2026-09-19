@@ -1,0 +1,50 @@
+{
+  "src": "shelly-test-device",
+  "dst": "_",
+  "method": "NotifyStatus",
+  "params": {
+    "ts": 123456.12,
+    "pm1:0": {
+      "id": 0,
+      "voltage": 228.6,
+      "current": 1.437,
+      "apower": 302.45,
+      "aprtpower": 328.47,
+      "pf": 0.921,
+      "freq": 49.98,
+      "aenergy": {
+        "total": 4321.765,
+        "by_minute": [
+          1260,
+          1185,
+          1095
+        ],
+        "minute_ts": 123456
+      },
+      "ret_aenergy": {
+        "total": 321.987,
+        "by_minute": [
+          120,
+          95,
+          70
+        ],
+        "minute_ts": 123456
+      },
+      "errors": [
+        "out_of_range:voltage",
+        "out_of_range:current",
+        "power_meter_failure",
+        "out_of_range:aprtpower",
+        "out_of_range:apower"
+      ],
+      "flags": [
+        "overcurrent",
+        "overvoltage",
+        "overpower",
+        "undervoltage",
+        "undercurrent",
+        "underpower"
+      ]
+    }
+  }
+}

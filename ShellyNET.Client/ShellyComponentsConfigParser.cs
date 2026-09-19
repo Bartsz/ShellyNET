@@ -89,8 +89,8 @@ public class ShellyComponentsConfigParser
             }
             if (reader.ValueSpan.StartsWith("eth"u8))
             {
-                var config = JsonSerializer.Deserialize(ref reader, ShellyConfigsJsonSerializerContext.Default.EthConfig);
-                if (config is EthConfig ethernetConfig) result.Add(config);
+                var config = JsonSerializer.Deserialize(ref reader, ShellyConfigsJsonSerializerContext.Default.EthernetConfig);
+                if (config is EthernetConfig ethernetConfig) result.Add(config);
                 reader.Read();
             }
             while (reader.ValueSpan.StartsWith("flood:"u8))

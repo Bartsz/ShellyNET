@@ -1,5 +1,12 @@
 ﻿namespace ShellyNET.Client;
 
+public enum CoverLastDirection
+{
+    Unkown,
+    Open,
+    Close,
+}
+
 public enum CoverError
 {
     UnknownError = 0,

@@ -32,5 +32,19 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="TestFiles\NotifyStatus\Input\input-full-change-v.1.0.7.json" />
+    <Content Remove="TestFiles\NotifyStatus\Switch\switch-full-change-v.1.0.7.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="TestFiles\NotifyStatus\Input\input-full-change-v.1.0.7.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestFiles\NotifyStatus\Switch\switch-full-change-v.1.0.7.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 
 </Project>

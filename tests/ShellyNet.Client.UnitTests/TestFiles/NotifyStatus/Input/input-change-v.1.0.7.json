@@ -3,7 +3,7 @@
   "dst": "_",
   "method": "NotifyStatus",
   "params": {
-    "ts": 1789468476.40,
+    "ts": 123456.120,
     "input:1": {
       "id": 1,
       "state": true

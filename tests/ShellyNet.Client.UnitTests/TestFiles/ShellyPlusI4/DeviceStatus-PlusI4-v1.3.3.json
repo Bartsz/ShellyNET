@@ -1,0 +1,50 @@
+{
+  "id": 6,
+  "src": "shellyplusi4-78421c53c500",
+  "dst": "_",
+  "result": {
+    "ble": {},
+    "cloud": { "connected": false },
+    "input:0": {
+      "id": 0,
+      "state": null
+    },
+    "input:1": {
+      "id": 1,
+      "state": true
+    },
+    "input:2": {
+      "id": 2,
+      "state": false
+    },
+    "input:3": {
+      "id": 3,
+      "state": false
+    },
+    "mqtt": { "connected": false },
+    "sys": {
+      "mac": "78421C53C500",
+      "restart_required": false,
+      "time": "11:40",
+      "unixtime": 1789724447,
+      "uptime": 42370,
+      "ram_size": 262280,
+      "ram_free": 126420,
+      "fs_size": 458752,
+      "fs_free": 139264,
+      "cfg_rev": 11,
+      "kvs_rev": 1,
+      "schedule_rev": 0,
+      "webhook_rev": 0,
+      "available_updates": { "stable": { "version": "1.7.5" } },
+      "reset_reason": 3
+    },
+    "wifi": {
+      "sta_ip": "192.168.1.103",
+      "status": "got ip",
+      "ssid": "TP-Link_3FAC",
+      "rssi": -63
+    },
+    "ws": { "connected": false }
+  }
+}
