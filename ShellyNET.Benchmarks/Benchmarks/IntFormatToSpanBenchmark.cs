@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Text.Unicode;
+﻿using System.Text.Unicode;
 
 //BenchmarkDotNet v0.15.8, Windows 11 (10.0.26200.9445/25H2/2025Update/HudsonValley2)
 //12th Gen Intel Core i7-1280P 2.00GHz, 1 CPU, 20 logical and 14 physical cores

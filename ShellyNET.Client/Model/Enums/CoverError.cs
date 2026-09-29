@@ -1,13 +1,13 @@
 ﻿namespace ShellyNET.Client;
 
-public enum CoverLastDirection
+public enum CoverLastDirection : byte
 {
     Unkown,
     Open,
     Close,
 }
 
-public enum CoverError
+public enum CoverError : byte
 {
     UnknownError = 0,
     /// <summary>When the temperature exceeds a predefined limit, <c>Cover</c> will stop immediately.</summary>

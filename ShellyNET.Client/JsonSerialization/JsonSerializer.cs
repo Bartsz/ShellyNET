@@ -207,7 +207,12 @@ public sealed partial class ShellyConfigsJsonSerializerContext : JsonSerializerC
 [JsonSerializable(typeof(RpcRequest<SwitchToggleParams>))]
 [JsonSerializable(typeof(RpcRequest<SmokeMuteParams>))]
 [JsonSerializable(typeof(RpcRequest<SysSetTimeParams>))]
+[JsonSerializable(typeof(RpcRequest<ScriptEvalParams>))]
+[JsonSerializable(typeof(RpcRequest<StartScriptParams>))]
+[JsonSerializable(typeof(RpcRequest<BTHomeAddDeviceParams>))]
+[JsonSerializable(typeof(BTHomeAddDeviceConfig))]
 
+[JsonSerializable(typeof(BTHomeAddDeviceResult))]
 [JsonSerializable(typeof(CbSetResult))]
 [JsonSerializable(typeof(CbGetLogResult))]
 [JsonSerializable(typeof(SwitchSetResult))]

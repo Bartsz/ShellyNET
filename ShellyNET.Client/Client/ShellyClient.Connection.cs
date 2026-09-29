@@ -2,7 +2,6 @@
 using ShellyNET.Client.Model.Enums;
 using ShellyNET.Client.Model.Messages;
 using System.Buffers;
-using System.Buffers.Text;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.WebSockets;
@@ -33,7 +32,6 @@ public partial class ShellyClient
 
     private readonly ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
     private readonly SemaphoreSlim _connectionSemaphore = new(1, 1);
-    private readonly SemaphoreSlim _authenticatedSendSemaphore = new(1, 1);
     private readonly ConcurrentDictionary<ushort, PendingRequest> _pendingRequests = new();
 
     private ClientWebSocket? _webSocket;
@@ -45,7 +43,7 @@ public partial class ShellyClient
     private AuthenticationState? _authenticationState;
     private Exception? _connectionError;
     private volatile bool _disconnectRequested;
-    private int _nextRequestId;
+    private int _nextRequestId = 30000;
 
     /// <summary>Occurs when an established connection ends without an explicit DisconnectAsync request.</summary>
     public event EventHandler<ShellyUnexpectedDisconnectionEventArgs>? DisconnectedUnexpectedly;
@@ -186,7 +184,7 @@ public partial class ShellyClient
 
         Interlocked.Exchange(ref _authenticationState, null);
 
-        var challengeResult = await SendRpcCoreAsync<EmptyRpcParameters, IgnoredRpcResult>(RpcMethods.Shelly_GetStatus, null, null, null, cancellationToken).ConfigureAwait(false);
+        var challengeResult = await SendRpcAttemptAsync<EmptyRpcParameters, IgnoredRpcResult>(RpcMethods.Shelly_GetStatus, null, null, null, cancellationToken).ConfigureAwait(false);
         var challengeFailure = CreateLoginTransportFailure(challengeResult);
         if (challengeFailure is { } failure) return failure;
 
@@ -204,7 +202,7 @@ public partial class ShellyClient
             return new ShellyLoginResult(authenticationStatus, challengeError, authenticationError);
         }
 
-        var authenticatedResult = await SendRpcCoreAsync<EmptyRpcParameters, IgnoredRpcResult>(RpcMethods.Shelly_GetStatus, null, authenticationState, null, cancellationToken).ConfigureAwait(false);
+        var authenticatedResult = await SendRpcAttemptAsync<EmptyRpcParameters, IgnoredRpcResult>(RpcMethods.Shelly_GetStatus, null, authenticationState, null, cancellationToken).ConfigureAwait(false);
         var authenticatedFailure = CreateLoginTransportFailure(authenticatedResult);
         if (authenticatedFailure is { } authenticatedFailureResult) return authenticatedFailureResult;
 
@@ -238,37 +236,6 @@ public partial class ShellyClient
         _webSocket = webSocket;
         _sendTask = SendLoopAsync();
         _receiveTask = ReceiveLoopAsync();
-    }
-
-    /// <summary>Appends the authentication object to a serialized RPC request and patches values that change for each reusable-nonce request.</summary>
-    private static void AppendAuthentication(PooledByteBufferWriter bufferWriter, AuthenticationState authenticationState)
-    {
-        if (bufferWriter.WrittenCount == 0) throw new InvalidOperationException("Cannot append authentication to an empty RPC request.");
-
-        bufferWriter.Rewind(1);
-        var authenticationDestination = bufferWriter.GetSpan(authenticationState.Template.Length).Slice(0, authenticationState.Template.Length);
-        authenticationState.Template.CopyTo(authenticationDestination);
-
-        if (authenticationState.DigestInput is not null)
-        {
-            if (authenticationState.NonceCount == int.MaxValue) throw new InvalidOperationException("The authentication nonce counter exceeded the supported range.");
-
-            var nonceCount = ++authenticationState.NonceCount;
-            Span<byte> nonceCountBytes = stackalloc byte[ModernNonceCountFieldLength];
-            if (!Utf8Formatter.TryFormat(nonceCount, nonceCountBytes, out var nonceCountBytesWritten, ModernNonceCountFormat) || nonceCountBytesWritten != ModernNonceCountFieldLength)
-            {
-                throw new InvalidOperationException("The authentication nonce counter did not fit the reserved field.");
-            }
-
-            nonceCountBytes.CopyTo(authenticationState.DigestInput.AsSpan(authenticationState.DigestNonceCountOffset, ModernNonceCountFieldLength));
-            nonceCountBytes.CopyTo(authenticationDestination.Slice(authenticationState.NonceCountOffset, ModernNonceCountFieldLength));
-
-            Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
-            SHA256.HashData(authenticationState.DigestInput, hash);
-            WriteLowerHex(hash, authenticationDestination.Slice(authenticationState.ResponseOffset, AuthenticationResponseFieldLength));
-        }
-
-        bufferWriter.Advance(authenticationState.Template.Length);
     }
 
     /// <summary>Waits at most ten seconds for one correlated response and converts timeout or cancellation into explicit result states.</summary>
@@ -475,7 +442,7 @@ public partial class ShellyClient
         return true;
     }
 
-    /// <summary>Reads only top-level routing fields and skips payload objects that do not affect classification.</summary>
+    /// <summary>Reads the top-level routing fields needed to distinguish responses, notifications, and device-initiated RPC calls.</summary>
     private static bool TryReadFrameHeader(Memory<byte> message, out ushort? responseId, out ShellyNotificationType notificationType)
     {
         responseId = null;
@@ -501,19 +468,8 @@ public partial class ShellyClient
                     return true;
                 }
 
-                if (reader.ValueTextEquals("src"u8))
-                {
-                    reader.Read();
-                    reader.Read();
-                    propertyRead = true;
-                }
-
-                if (reader.ValueTextEquals("dst"u8))
-                {
-                    reader.Read();
-                    reader.Read();
-                    propertyRead = true;
-                }
+                if (reader.ValueTextEquals("src"u8)) { reader.Read(); reader.Read(); propertyRead = true; }
+                if (reader.ValueTextEquals("dst"u8)) { reader.Read(); reader.Read(); propertyRead = true; }
 
                 if (reader.ValueTextEquals("method"u8))
                 {
@@ -528,14 +484,7 @@ public partial class ShellyClient
                     return true;
                 }
 
-                if (reader.ValueTextEquals("params"u8) || reader.ValueTextEquals("result"u8))
-                {
-                    reader.Read();
-                    reader.Skip();
-                    reader.Read();
-                    propertyRead = true;
-                }
- 
+                if (reader.ValueTextEquals("params"u8) || reader.ValueTextEquals("result"u8)) { reader.Read(); reader.Skip(); reader.Read(); propertyRead = true; }
             }
         }
         catch (JsonException)
@@ -802,7 +751,6 @@ public partial class ShellyClient
         };
     }
 
-
     /// <summary>Aborts the single active transport and waits for its loops to release resources.</summary>
     private async Task AbortConnectionAsync()
     {
@@ -924,9 +872,6 @@ public partial class ShellyClient
             _buffer = bufferPool.Rent(initialCapacity);
         }
 
-        /// <summary>Gets the number of bytes currently written into the owned buffer.</summary>
-        public int WrittenCount => _writtenCount;
-
         /// <summary>Commits bytes previously obtained from GetMemory or GetSpan.</summary>
         public void Advance(int count)
         {
@@ -949,18 +894,17 @@ public partial class ShellyClient
             return GetBuffer().AsSpan(_writtenCount);
         }
 
-        /// <summary>Moves the write cursor backward so the final request brace can be replaced by the authentication suffix.</summary>
-        public void Rewind(int count)
+        /// <summary>Transfers buffer ownership to the output queue and reserves space for authentication that the send loop may append in order.</summary>
+        public OutgoingMessage DetachMessage(AuthenticationState? authenticationState)
         {
-            if (count < 0 || count > _writtenCount) throw new ArgumentOutOfRangeException(nameof(count));
-            _writtenCount -= count;
-        }
+            if (authenticationState is not null)
+            {
+                var additionalAuthenticationLength = authenticationState.Template.Length - 1;
+                EnsureAdditionalCapacity(additionalAuthenticationLength);
+            }
 
-        /// <summary>Transfers buffer ownership to an outgoing message and prevents disposal from returning that buffer to the pool.</summary>
-        public OutgoingMessage DetachMessage()
-        {
             var buffer = GetBuffer();
-            var message = new OutgoingMessage(buffer, _writtenCount);
+            var message = new OutgoingMessage(buffer, _writtenCount, authenticationState);
             _buffer = null;
             _writtenCount = 0;
             return message;
@@ -1001,24 +945,28 @@ public partial class ShellyClient
         }
     }
 
-    /// <summary>Owns one pooled outbound payload until the send loop returns it to the shared pool.</summary>
+    /// <summary>Owns one pooled outbound RPC and carries the exact authentication state selected for that send attempt.</summary>
     private readonly struct OutgoingMessage
     {
-        /// <summary>Creates one outbound payload owned by the output queue.</summary>
-        public OutgoingMessage(byte[] buffer, int length)
+        /// <summary>Creates one outbound payload whose buffer ownership transfers to the output queue.</summary>
+        public OutgoingMessage(byte[] buffer, int length, AuthenticationState? authenticationState)
         {
             Buffer = buffer;
             Length = length;
+            Authentication = authenticationState;
         }
 
         /// <summary>Gets the pooled payload buffer.</summary>
         public byte[] Buffer { get; }
 
-        /// <summary>Gets the number of payload bytes to send.</summary>
+        /// <summary>Gets the serialized RPC length before optional authentication is appended.</summary>
         public int Length { get; }
+
+        /// <summary>Gets the authentication state selected for this attempt, or null when the request must be sent without authentication.</summary>
+        public AuthenticationState? Authentication { get; }
     }
 
-    /// <summary>Contains the immutable authentication template and digest state bound to one authentication nonce.</summary>
+    /// <summary>Contains precomputed authentication data for one nonce while the send loop exclusively owns per-request digest mutation.</summary>
     private sealed class AuthenticationState
     {
         /// <summary>Creates authentication state for either one fixed legacy digest or one reusable firmware 2.0+ nonce.</summary>
@@ -1053,7 +1001,7 @@ public partial class ShellyClient
         /// <summary>Gets whether this state uses firmware 2.0+ reusable-nonce semantics.</summary>
         public bool UsesReusableNonce => DigestInput is not null;
 
-        /// <summary>Gets or sets the last nonce count assigned while the authenticated-send semaphore is held.</summary>
+        /// <summary>Gets or sets the last nonce count assigned by the single send loop for this reusable authentication state.</summary>
         public int NonceCount { get; set; }
     }
 

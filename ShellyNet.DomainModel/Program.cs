@@ -26,13 +26,18 @@ public static class Program
             }
             var config = await client.Call_Shelly_GetDeviceConfigAsync();
             var status = await client.Call_Shelly_GetDeviceStatus();
-            var updates = await client.Call_Shelly_CheckForUpdate();
-           // await client.Call_Shelly_Reboot();
-
+            //var updates = await client.Call_Shelly_CheckForUpdate();
+            // await client.Call_Shelly_Reboot();
+            await client.CallScriptEvalAsync(2, $"startBleScan({30000},true,{0})");
+            await client.CallBTHomeAddDeviceAsync("a4:c1:38:73:d6:3b", "MijaTemp", ct: ct);
             while (true)
             {
-                await Task.Delay(1150);
+                await Task.Delay(1000);
+                //status = await client.Call_Shelly_GetDeviceStatus();
+
                 //var status1 = await client.Call_Shelly_GetDeviceStatus();
+                //status = await client.Call_Shelly_GetDeviceStatus();
+                //config = await client.CallShe
 
             }
 

@@ -32,6 +32,68 @@ public readonly struct EmptyRpcParameters
 {
 }
 
+
+
+public readonly record struct BTHomeAddDeviceConfig(
+    [property: JsonPropertyName("addr")]
+    string Address,
+
+    [property: JsonPropertyName("name")]
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    string? Name = null,
+
+    [property: JsonPropertyName("key")]
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    string? EncryptionKey = null
+);
+
+public readonly record struct BTHomeAddDeviceParams(
+    [property: JsonPropertyName("config")]
+    BTHomeAddDeviceConfig Config,
+
+    [property: JsonPropertyName("id")]
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    int? ComponentId = null
+);
+
+public readonly record struct BTHomeAddDeviceResult
+{
+    [JsonPropertyName("added")]
+    public string? Added { get; init; }
+
+    [JsonPropertyName("key")]
+    public string? Key { get; init; }
+
+    [JsonIgnore]
+    public string? ComponentKey => Added ?? Key;
+}
+
+
+
+public readonly record struct ScriptEvalParams(
+    [property: JsonPropertyName("id")]
+    int ScriptId,
+
+    [property: JsonPropertyName("code")]
+    string Code
+);
+
+public readonly record struct StartScriptParams(
+    [property: JsonPropertyName("id")]
+    int ScriptId
+);
+
+public readonly record struct BleScanStartResult(
+    [property: JsonPropertyName("started")] bool Started);
+
+
+public readonly record struct BleScanStopParams(
+    [property: JsonPropertyName("id")] int ScriptId);
+
+public readonly record struct BleScanStopResult(
+    [property: JsonPropertyName("stopped")] bool Stopped);
+
+
 public readonly struct NullRpcResponse();
 
 /// <summary>Provides the parameters required to disengage a circuit breaker through CB.Set.</summary>

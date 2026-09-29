@@ -1,10 +1,6 @@
 ﻿using ShellyNET.Client.Model;
 using ShellyNET.Client.Model.Enums;
 using System.Buffers;
-using System.Buffers.Binary;
-using System.ComponentModel;
-using System.Net;
-using System.Security.Cryptography;
 
 namespace ShellyNET.Client.Parsers;
 
@@ -12,8 +8,8 @@ public readonly struct ShellyNotifyStatusParseResult : IDisposable
 {
     private readonly ArrayPool<ShellyNotifyStatusMessage>? _messagePool;
     private readonly ArrayPool<ShellyNotifyStatusStringMessage>? _stringMessagePool;
-    private readonly ShellyNotifyStatusMessage[] _messages { get; }
-    private readonly ShellyNotifyStatusStringMessage[] _stringMessages { get; }
+    private readonly ShellyNotifyStatusMessage[] _messages;
+    private readonly ShellyNotifyStatusStringMessage[] _stringMessages;
 
     public ShellyNotifyStatusParseResult()
     {
@@ -41,14 +37,13 @@ public readonly struct ShellyNotifyStatusParseResult : IDisposable
     public ushort StringMessageCount { get; }
 
     public readonly ReadOnlySpan<ShellyNotifyStatusMessage> MessageSpan => _messages.AsSpan(0, MessageCount);
-
     public readonly ReadOnlySpan<ShellyNotifyStatusStringMessage> StringMessageSpan => _stringMessages.AsSpan(0, StringMessageCount);
 
 
     public void Dispose()
     {
-        _messagePool?.Return(_messages);
-        _stringMessagePool?.Return(_stringMessages, clearArray: true);
+        _messagePool?.Return(_messages, clearArray: false);
+        _stringMessagePool?.Return(_stringMessages, clearArray: false);
     }
 }
 
@@ -286,9 +281,9 @@ public sealed partial class ShellyNotifyStatusParser
 
     private static readonly ErrorDefinition[] _temperatureErrors = [
                             new("read"u8.ToArray(), (byte)TemperatureError.Read),
+
                         new("out_of_range"u8.ToArray(), (byte)TemperatureError.OutOfRange),
                     ];
-
     private static readonly ErrorDefinition[] _voltmeterErrors = [
                         new("read"u8.ToArray(), (byte)VoltmeterError.Read),
                         new("out_of_range"u8.ToArray(), (byte)VoltmeterError.OutOfRange),
@@ -317,7 +312,6 @@ public sealed partial class ShellyNotifyStatusParser
         _stringMessageCount = 0;
         _messages = _messagesPool.Rent(8);
         _stringMessages = _stringMessagesPool.Rent(8);
-
         // when DeviceStatus responds, there is no time stamp so we assume current timestamp
         if (container == StatesContainingObject.Results) timestamp = DateTimeOffset.UtcNow;
 
@@ -325,7 +319,10 @@ public sealed partial class ShellyNotifyStatusParser
         OpenContainingObject(ref reader, containingObjectKey); // after function reader is at "{" of the params which works with while loop
         ParseMessages(ref reader, timestamp);
 
-        return new ShellyNotifyStatusParseResult(_messages, _stringMessages, _messagesPool, _stringMessagesPool, _messageCount, _stringMessageCount);
+        return new ShellyNotifyStatusParseResult(
+            _messages, _stringMessages,  
+            _messagesPool, _stringMessagesPool, 
+            _messageCount, _stringMessageCount);
     }
 
     private void ParseMessages(ref Utf8JsonReader reader, DateTimeOffset timestamp)
@@ -382,7 +379,15 @@ public sealed partial class ShellyNotifyStatusParser
                     if (flowControl == false) continue;
                     readProperty = true;
                 }
-
+                 
+                while (reader.ValueSpan.StartsWith("bthomesensor:"u8))
+                {
+                    var flowControl = ReadBTHomeSensor(ref reader, timestamp);
+                    if (flowControl == true) return;
+                    if (flowControl == false) continue;
+                    readProperty = true;
+                }
+                 
                 while (reader.ValueSpan.StartsWith("cover:"u8))
                 {
                     var flowControl = ReadCoverMessages(ref reader, timestamp);
@@ -805,6 +810,52 @@ public sealed partial class ShellyNotifyStatusParser
             if (!readProperty) { if (!reader.Read()) return true; }
         }
 
+        reader.Read(); // was at "}"
+        return null;
+    }
+
+    /// <summary>Reads BTHomeSensor status and normalizes Shelly dynamic component id 200..299 to byte id 0..99.</summary>
+    private bool? ReadBTHomeSensor(ref Utf8JsonReader reader, DateTimeOffset timestamp)
+    {
+        var idSpan = reader.ValueSpan[13..];
+        var shellyComponentId = ushort.Parse(idSpan);
+        if (shellyComponentId is < 200 or > 299) return true;
+
+        var componentId = (byte)(shellyComponentId - 200);
+        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject) return false;
+  
+        while (true)
+        {
+            bool readProperty = false;
+
+            if (reader.TokenType == JsonTokenType.EndObject) break;
+            if (reader.TokenType != JsonTokenType.PropertyName) { if (!reader.Read()) return true; continue; }
+
+            if (reader.ValueSpan.SequenceEqual("id"u8)) { if (!reader.Read()) return true; if (!reader.Read()) return true; readProperty = true; }
+
+            if (reader.ValueSpan.SequenceEqual("value"u8))
+            {
+                reader.Read();
+
+                if (reader.TokenType == JsonTokenType.Null) { }
+                else if (reader.TokenType == JsonTokenType.Number) AddMessage(new(timestamp, reader.GetDouble(), componentId));
+                else if (reader.TokenType is JsonTokenType.True or JsonTokenType.False) AddMessage(new(timestamp, reader.GetBoolean(), componentId));
+                else if (reader.TokenType == JsonTokenType.String) AddStringStatusMessage(new(timestamp, reader.GetString(), componentId));
+
+                reader.Read();
+                readProperty = true;
+            }
+
+            if (reader.ValueSpan.SequenceEqual("last_update_ts"u8) || reader.ValueSpan.SequenceEqual("last_updated_ts"u8))
+            { 
+                if (!reader.Read()) return true;
+                if (!reader.Read()) return true;
+                readProperty = true;
+            }
+
+            if (!readProperty) { if (!reader.Read()) return true; }
+        } 
+         
         reader.Read(); // was at "}"
         return null;
     }
@@ -2292,61 +2343,6 @@ public sealed partial class ShellyNotifyStatusParser
         return true;
     }
 
-    private bool ReadIPv4Property(ref Utf8JsonReader reader, ReadOnlySpan<byte> propertyName, DateTimeOffset timestamp, byte componentId, ComponentType componentType, PropertyName property)
-    {
-        if (!reader.ValueSpan.SequenceEqual(propertyName)) return false;
-
-        reader.Read();
-        if (reader.TokenType == JsonTokenType.Null)
-            AddMessage(new(timestamp, (double?)null, componentId, componentType, property));
-        else if (TryPackIPv4(reader.ValueSpan, out var packedIp))
-            AddMessage(new(timestamp, packedIp, componentId, componentType, property));
-
-        reader.Read();
-        return true;
-    }
-
-    private static bool TryPackIPv4(ReadOnlySpan<byte> value, out long packedIp)
-    {
-        packedIp = 0;
-        var address = IPAddress.Parse(value);
-
-        Span<byte> bytes = stackalloc byte[4];
-        if (!address.TryWriteBytes(bytes, out _)) return false;
-
-        packedIp = BinaryPrimitives.ReadUInt32BigEndian(bytes);
-        return true;
-    }
-
-    private static bool TryPackMacAddress(ReadOnlySpan<byte> value, out long packedAddress)
-    {
-        packedAddress = 0;
-        var digits = 0;
-
-        foreach (byte c in value)
-        {
-            if (c is (byte)':' or (byte)'-')
-                continue;
-
-            int hex = c switch
-            {
-                >= (byte)'0' and <= (byte)'9' => c - '0',
-                >= (byte)'A' and <= (byte)'F' => c - 'A' + 10,
-                >= (byte)'a' and <= (byte)'f' => c - 'a' + 10,
-                _ => -1
-            };
-
-            if (hex < 0 || ++digits > 12)
-            {
-                packedAddress = 0;
-                return false;
-            }
-
-            packedAddress = (packedAddress << 4) | (uint)hex;
-        }
-
-        return digits == 12;
-    }
 
     private void ReadInputCountData(ref Utf8JsonReader reader, DateTimeOffset timestamp, byte componentId)
     {

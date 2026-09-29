@@ -64,7 +64,7 @@ public class ShellyNotifyEventParser
 
                 ComponentType componentType = ComponentType.Unkown;
                 byte? id = null;
-                ComponentEvent componentEvent = ComponentEvent.Unkown;
+                ComponentEvent eventType = ComponentEvent.Unkown;
                 ComponentType targetComponent = ComponentType.Unkown;
                 bool restartRequired = false;
                 long eventTimestamp = 0;
@@ -97,9 +97,18 @@ public class ShellyNotifyEventParser
                     if (reader.ValueSpan.SequenceEqual("event"u8))
                     {
                         reader.Read();
-                        componentEvent = GetComponentEvent(reader.ValueSpan);
+                        eventType = GetComponentEvent(reader.ValueSpan);
                         reader.Read();
                         readProperty = true;
+                    }
+
+                    switch (componentType)
+                    {
+                       case ComponentType.Button:
+                            break;
+                        case ComponentType.Input:
+                            break;
+               
                     }
 
                     if (reader.ValueSpan.SequenceEqual("target"u8))
@@ -126,11 +135,11 @@ public class ShellyNotifyEventParser
                         readProperty = true;
                     }
 
-                    if (eventTimestamp != 0 && componentEvent != ComponentEvent.Unkown &&
+                    if (eventTimestamp != 0 && eventType != ComponentEvent.Unkown &&
                        id.HasValue && componentType != ComponentType.Unkown)
                     {
                         var datetimestamp = DateTimeOffset.FromUnixTimeMilliseconds(eventTimestamp);
-                        var eventMsg = new ShellyComponentEvent(datetimestamp, id.Value, componentType, componentEvent);
+                        var eventMsg = new ShellyComponentEvent(datetimestamp, id.Value, componentType, eventType);
                         AddEvent(eventMsg);
                     }
 

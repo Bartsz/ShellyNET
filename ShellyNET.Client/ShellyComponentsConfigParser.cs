@@ -1,4 +1,6 @@
 ﻿using ShellyNET.Client.Model;
+using ShellyNET.Client.Model.Enums;
+using ShellyNET.Client.Parsers;
 
 namespace ShellyNET.Client;
 
@@ -19,6 +21,11 @@ public class ShellyComponentsConfigParser
                 var config = JsonSerializer.Deserialize(ref reader, ShellyConfigsJsonSerializerContext.Default.BLEConfig);
                 if (config is BLEConfig bleConfig) result.Add(config);
                 reader.Read();
+            }
+            while (reader.ValueSpan.StartsWith("bthomesensor:"u8))
+            {
+                var sensor = ParseBTHomeSensor(ref reader);
+                if(sensor is not null) result.Add(sensor);
             }
             while (reader.ValueSpan.StartsWith("camera:"u8))
             {
@@ -259,5 +266,66 @@ public class ShellyComponentsConfigParser
         }
 
         return result;
+    }
+
+    public BTHomeSensorConfig? ParseBTHomeSensor(ref Utf8JsonReader reader)
+    {
+        var idSpan = reader.ValueSpan[13..];
+        var shortId = ushort.Parse(idSpan);
+        var componentId = (byte)(shortId - 200);
+        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject) return null;
+
+        var config = new BTHomeSensorConfig() { ComponentId = componentId };
+
+        while (true)
+        {
+            bool readProperty = false;
+
+            if (reader.TokenType == JsonTokenType.EndObject) break;
+            if (reader.TokenType != JsonTokenType.PropertyName) { reader.Read(); continue; }
+
+            if (reader.ValueSpan.SequenceEqual("id"u8)) { reader.Read(); reader.Read(); readProperty = true; }
+            if (reader.ValueSpan.SequenceEqual("addr"u8))
+            {
+                reader.Read();
+                var macRead = ShellyNotifyStatusParser.TryPackMacAddress(reader.ValueSpan, out var mac);
+                config.MacAddress = macRead ? mac : 0;
+                reader.Read();
+                readProperty = true;
+            }
+            if (reader.ValueSpan.SequenceEqual("name"u8))
+            {
+                reader.Read();
+                var name = reader.GetString();
+                config.Name = name;
+                reader.Read();
+                readProperty = true;
+            }
+            if (reader.ValueSpan.SequenceEqual("meta"u8)) { reader.Read(); reader.Skip(); readProperty = true; }
+
+            if (reader.ValueSpan.SequenceEqual("obj_id"u8))
+            {
+                reader.Read();
+                var objId = reader.GetByte();
+                config.ObjectType = (BTHomeObjectType)objId;
+                reader.Read();
+                readProperty = true;
+            }
+
+            if (reader.ValueSpan.SequenceEqual("idx"u8))
+            {
+                reader.Read();
+                var idx = reader.GetByte();
+                config.Idx = idx;
+                reader.Read();
+                readProperty = true;
+            }
+
+            if (!readProperty) { if (!reader.Read()) break; }
+        }
+
+        if (config.MacAddress == 0) return null;
+
+        return config;
     }
 }

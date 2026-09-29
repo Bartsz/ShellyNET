@@ -1,4 +1,6 @@
-﻿namespace ShellyNET.Client.Model;
+﻿using ShellyNET.Client.Model.Enums;
+
+namespace ShellyNET.Client.Model;
 
 // Generated from the current Shelly Gen2+ component documentation for Shelly.GetConfig payloads.
 // Streamer, HTTP, KVS, Schedule, Webhook and XMOD are services without a GetConfig payload.
@@ -916,6 +918,23 @@ public sealed record class StorageConfig : ShellyComponentConfigBase, IShellyCom
 
 }
 
+public sealed record class BTHomeSensorConfig : ShellyComponentConfigBase, IShellyComponentConfig
+{
+    public static string ComponentName => "bthomesensor";
+
+    public byte ComponentId { get; set; }
+    public string Name { get; set; }
+    /// <summary>MAC address of the physical BTHome device.</summary>
+    public long MacAddress { get; set; }
+
+    /// <summary>BTHome object type represented by the sensor.</summary>
+    public BTHomeObjectType ObjectType { get; set; }
+
+    /// <summary>Index distinguishing multiple BTHome objects of the same type.</summary>
+    public byte Idx { get; set; }
+     
+}
+
 /// <summary>Controls RPC access over Bluetooth Low Energy.</summary>
 public sealed record class BLERpcConfig
 {
@@ -939,6 +958,9 @@ public sealed record class BLEConfig : ShellyComponentConfigBase, IShellyCompone
 {
     public static string ComponentName => "BLE";
 
+    /// <summary>Determines whether Bluetooth  communication is enabled.</summary>
+    [JsonPropertyName("enable")]
+    public bool Enable { get; init; }
     /// <summary>Controls current BLE RPC availability.</summary>
     [JsonPropertyName("rpc")]
     public BLERpcConfig? Rpc { get; init; }

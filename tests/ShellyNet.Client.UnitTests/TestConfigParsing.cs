@@ -1,7 +1,4 @@
-﻿using ShellyNET.Client;
-using ShellyNET.Client.Parsers;
-
-namespace ShellyNet.Client.UnitTests;
+﻿namespace ShellyNet.Client.UnitTests;
 
 public sealed class ShellyConfigParserTests
 {

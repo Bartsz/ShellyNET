@@ -1,6 +1,5 @@
 ﻿using ShellyNET.Client.Model;
 using ShellyNET.Client.Model.Messages;
-using ShellyNET.Client.Parsers;
 using System.Net.WebSockets;
 using System.Text.Json.Serialization.Metadata;
 
@@ -13,70 +12,12 @@ public partial class ShellyClient
     /// <summary>Materializes a successful JSON-RPC result from the complete response and the exact result payload.</summary>
     private delegate T? RpcResultParser<T>(Memory<byte> response, Memory<byte> resultPayload);
 
-    /// <summary>Loads device identity without authentication and refreshes the information used by connection initialization.</summary>
-    public async Task<ShellyRpcResult<ShellyDeviceInfo>> Call_Shelly_GetDeviceInfoAsync(CancellationToken ct = default)
-    {
-        var result = await SendRpcCoreAsync<EmptyRpcParameters, ShellyDeviceInfo>(RpcMethods.Shelly_GetDeviceInfo, null, null, static (_, resultPayload) => JsonSerializer.Deserialize(resultPayload.Span, ShellyJsonSerializerContext.Default.ShellyDeviceInfo), ct).ConfigureAwait(false);
-        if (result.Status != ShellyRpcResultStatus.Success) return result;
-        if (result.Value is null) return new ShellyRpcResult<ShellyDeviceInfo>(ShellyRpcResultStatus.ClientError, null, null, "Shelly.GetDeviceInfo returned an empty result.");
-
-        Volatile.Write(ref _deviceInfo, result.Value);
-        if (!result.Value.AuthenticationEnabled) Interlocked.Exchange(ref _authenticationState, null);
-        return result;
-    }
-
-    /// <summary>Loads the complete device configuration and converts component entries into their strongly typed configuration models.</summary>
-    public async Task<ShellyRpcResult<List<ShellyComponentConfigBase>>> Call_Shelly_GetDeviceConfigAsync(CancellationToken ct = default)
-    {
-        var response = await SendRpcAsync<EmptyRpcParameters, byte[]>(RpcMethods.Shelly_GetConfig, null, static (message, _) => message.ToArray(), ct).ConfigureAwait(false);
-        if (!response.IsSuccess) return new ShellyRpcResult<List<ShellyComponentConfigBase>>(response.Status, null, response.RpcError, response.ErrorMessage);
-
-        try
-        {
-            var config = _configParser.ParseConfig(response.Value!);
-            return new ShellyRpcResult<List<ShellyComponentConfigBase>>(ShellyRpcResultStatus.Success, config, null, null);
-        }
-        catch (JsonException exception)
-        {
-            return new ShellyRpcResult<List<ShellyComponentConfigBase>>(ShellyRpcResultStatus.ClientError, null, null, exception.Message);
-        }
-    }
-
-    /// <summary>Loads the complete device status and publishes it through the existing component-state processing path.</summary>
-    public async Task<ShellyRpcResult<IShellyStatusMessage[]>> Call_Shelly_GetDeviceStatus(CancellationToken ct = default)
-    {
-        var response = await SendRpcAsync<EmptyRpcParameters, ShellyNotifyStatusParseResult>(RpcMethods.Shelly_GetStatus, null, (messge, resultPayload) =>
-        {
-            var parser = new ShellyNotifyStatusParser();
-            return parser.ProcessNotifyStatusMessage(messge, StatesContainingObject.Results, ct);
-        }, ct).ConfigureAwait(false);
-
-        if (!response.IsSuccess) return new ShellyRpcResult<IShellyStatusMessage[]>(response.Status, null, response.RpcError, response.ErrorMessage);
-
-        var messages = response.Value.MessageSpan.ToArray().OfType<IShellyStatusMessage>();
-        var textMessages = response.Value.StringMessageSpan.ToArray().OfType<IShellyStatusMessage>();
-        var allMessages = messages.Concat(textMessages).ToArray();
-        response.Value.Dispose();
-        return new ShellyRpcResult<IShellyStatusMessage[]>(ShellyRpcResultStatus.Success, allMessages, null, null);
-    }
-
-    /// <summary>Disengages the requested circuit breaker and returns whether it was engaged before the command.</summary>
-    public async Task<ShellyRpcResult<DeviceUpdateResult>> Call_Shelly_CheckForUpdate(CancellationToken ct = default)
-    {
-        return await SendRpcResultAsync<DeviceUpdateResult>(RpcMethods.Shelly_CheckForUpdate, ct);
-    }
-
-    /// <summary>Disengages the requested circuit breaker and returns whether it was engaged before the command.</summary>
-    public async Task<ShellyRpcResult<NullRpcResponse>> Call_Shelly_Reboot(CancellationToken ct = default)
-    {
-        return await SendRpcResultAsync<NullRpcResponse>(RpcMethods.Shelly_Reboot, ct);
-    }
 
     /// <summary>Disengages the requested circuit breaker and returns whether it was engaged before the command.</summary>
     public ValueTask<ShellyRpcResult<CbSetResult>> CallCbSetAsync(byte componentId, CancellationToken cancellationToken = default)
     {
         var parameters = new CbSetParams(componentId, false);
-        return SendRpcResultAsync<CbSetParams, CbSetResult>(RpcMethods.CB_Set, parameters, cancellationToken);
+        return SendRpcAsync<CbSetParams, CbSetResult>(RpcMethods.CB_Set, parameters, cancellationToken);
     }
 
     /// <summary>Retrieves circuit breaker activity created after the supplied UTC time.</summary>
@@ -84,7 +25,7 @@ public partial class ShellyClient
     {
         var unixTimestamp = after.ToUnixTimeSeconds();
         var parameters = new CbGetLogParams(componentId, unixTimestamp);
-        return SendRpcResultAsync<CbGetLogParams, CbGetLogResult>(RpcMethods.CB_GetLog, parameters, cancellationToken);
+        return SendRpcAsync<CbGetLogParams, CbGetLogResult>(RpcMethods.CB_GetLog, parameters, cancellationToken);
     }
 
     /// <summary>Applies selected output, brightness or color-temperature changes to a CCT component.</summary>
@@ -326,7 +267,7 @@ public partial class ShellyClient
         ValidateTag(tag);
         var toggleAfterSeconds = ToSeconds(toggleAfter, nameof(toggleAfter));
         var parameters = new SwitchSetParams(componentId, state, toggleAfterSeconds, tag);
-        return SendRpcResultAsync<SwitchSetParams, SwitchSetResult>(RpcMethods.Switch_Set, parameters, cancellationToken);
+        return SendRpcAsync<SwitchSetParams, SwitchSetResult>(RpcMethods.Switch_Set, parameters, cancellationToken);
     }
 
     /// <summary>Toggles a switch output and returns whether the switch was on before the command.</summary>
@@ -334,7 +275,7 @@ public partial class ShellyClient
     {
         ValidateTag(tag);
         var parameters = new SwitchToggleParams(componentId, tag);
-        return SendRpcResultAsync<SwitchToggleParams, SwitchToggleResult>(RpcMethods.Switch_Toggle, parameters, cancellationToken);
+        return SendRpcAsync<SwitchToggleParams, SwitchToggleResult>(RpcMethods.Switch_Toggle, parameters, cancellationToken);
     }
 
     /// <summary>Mutes the smoke alarm associated with the requested smoke component.</summary>
@@ -353,37 +294,30 @@ public partial class ShellyClient
     }
 
     /// <summary>Sends a typed RPC and materializes its successful result through source-generated serializer metadata.</summary>
-    private ValueTask<ShellyRpcResult<TResult>> SendRpcResultAsync<TParams, TResult>(RpcMethods method, TParams parameters, CancellationToken cancellationToken) where TParams : struct
+    private ValueTask<ShellyRpcResult<TResult>> SendRpcAsync<TParams, TResult>(RpcMethods method, TParams parameters, CancellationToken cancellationToken) where TParams : struct
     {
         var pendingResult = SendRpcAsync<TParams, TResult>(method, parameters, static (_, resultPayload) => DeserializeRpcResult<TResult>(resultPayload.Span), cancellationToken);
-        var result = new ValueTask<ShellyRpcResult<TResult>>(pendingResult);
-        return result;
+        return new ValueTask<ShellyRpcResult<TResult>>(pendingResult);
     }
 
-    /// <summary>Sends a typed RPC and materializes its successful result through source-generated serializer metadata.</summary>
-    private ValueTask<ShellyRpcResult<TResult>> SendRpcResultAsync<TResult>(RpcMethods method, CancellationToken cancellationToken)
+    /// <summary>Sends a parameterless RPC and materializes its successful result through source-generated serializer metadata.</summary>
+    private Task<ShellyRpcResult<TResult>> SendRpcAsync<TResult>(RpcMethods method, CancellationToken cancellationToken)
     {
-        // It doesn't look good that we need to pass params type if we don't pass params
-        var pendingResult = SendRpcAsync<EmptyRpcParameters, TResult>(method, null, static (_, resultPayload) => DeserializeRpcResult<TResult>(resultPayload.Span), cancellationToken);
-        var result = new ValueTask<ShellyRpcResult<TResult>>(pendingResult);
-        return result;
+        return SendRpcAsync<EmptyRpcParameters, TResult>(method, null, static (_, resultPayload) => DeserializeRpcResult<TResult>(resultPayload.Span), cancellationToken);
     }
 
     /// <summary>Sends a typed RPC and waits for the device response when the successful result payload is not needed by the caller.</summary>
     private ValueTask SendRpcAckAsync<TParams>(RpcMethods method, TParams parameters, CancellationToken cancellationToken) where TParams : struct
     {
-        // It doesn't look good that we need to pass result type if we don't expect results
         var pendingResult = SendRpcAsync<TParams, IgnoredRpcResult>(method, parameters, null, cancellationToken);
-        var acknowledgement = new ValueTask(pendingResult);
-        return acknowledgement;
+        return new ValueTask(pendingResult);
     }
 
     /// <summary>Sends a parameterless RPC and waits for the device response when the successful result payload is not needed by the caller.</summary>
     private ValueTask SendRpcAckAsync(RpcMethods method, CancellationToken cancellationToken)
     {
         var pendingResult = SendRpcAsync<EmptyRpcParameters, IgnoredRpcResult>(method, null, null, cancellationToken);
-        var acknowledgement = new ValueTask(pendingResult);
-        return acknowledgement;
+        return new ValueTask(pendingResult);
     }
 
     /// <summary>Deserializes an RPC result with source-generated metadata and reports missing serializer registrations as a configuration error.</summary>
@@ -442,10 +376,10 @@ public partial class ShellyClient
     }
 
     /// <summary>Sends one typed RPC with the active authentication state and retries once when a reusable nonce becomes stale.</summary>
-    private async Task<ShellyRpcResult<TResult>> SendRpcAsync<TParams, TResult>(RpcMethods method, TParams? parameters, RpcResultParser<TResult>? resultParser, CancellationToken ct) where TParams : struct
+    private async Task<ShellyRpcResult<TResult>> SendRpcAsync<TParams, TResult>(RpcMethods method, TParams? parameters, RpcResultParser<TResult>? resultParser, CancellationToken cancellationToken) where TParams : struct
     {
         var authenticationState = Volatile.Read(ref _authenticationState);
-        var result = await SendRpcCoreAsync(method, parameters, authenticationState, resultParser, ct).ConfigureAwait(false);
+        var result = await SendRpcAttemptAsync(method, parameters, authenticationState, resultParser, cancellationToken).ConfigureAwait(false);
 
         if (authenticationState?.UsesReusableNonce != true) return result;
         if (result.RpcError is not { Code: 401 } rpcError) return result;
@@ -455,20 +389,40 @@ public partial class ShellyClient
         var deviceInfo = DeviceInfo;
         if (deviceInfo is null) return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.ConnectionLost, default, null, null);
 
-        if (!TryRefreshAuthenticationState(deviceInfo, authenticationState, challenge, out var refreshedState, out var refreshError))
+        if (!TryGetRetryAuthenticationState(deviceInfo, authenticationState, challenge, out var retryAuthenticationState, out var refreshError))
         {
-            return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.ClientError, default, null, refreshError ?? "Shelly returned an invalid stale authentication challenge.");
+            return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.ClientError, default, null, refreshError);
         }
 
-        Interlocked.CompareExchange(ref _authenticationState, refreshedState, authenticationState);
-        var currentAuthenticationState = Volatile.Read(ref _authenticationState);
-        if (currentAuthenticationState is null) return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.ConnectionLost, default, null, null);
-
-        return await SendRpcCoreAsync(method, parameters, currentAuthenticationState, resultParser, ct).ConfigureAwait(false);
+        if (retryAuthenticationState is null) return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.ConnectionLost, default, null, null);
+        return await SendRpcAttemptAsync(method, parameters, retryAuthenticationState, resultParser, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Sends one typed RPC with an explicitly selected authentication state so login and stale-nonce retry can control authentication.</summary>
-    private async Task<ShellyRpcResult<TResult>> SendRpcCoreAsync<TParams, TResult>(RpcMethods method, TParams? parameters, AuthenticationState? authenticationState, RpcResultParser<TResult>? resultParser, CancellationToken ct) where TParams : struct
+    /// <summary>Publishes one refreshed nonce state while letting concurrent stale responses reuse the state already chosen by another caller.</summary>
+    private bool TryGetRetryAuthenticationState(ShellyDeviceInfo deviceInfo, AuthenticationState staleAuthenticationState, ShellyAuthChallenge challenge, out AuthenticationState? retryAuthenticationState, out string? errorMessage)
+    {
+        errorMessage = null;
+
+        lock (staleAuthenticationState)
+        {
+            retryAuthenticationState = Volatile.Read(ref _authenticationState);
+            if (retryAuthenticationState is null) return true;
+            if (!ReferenceEquals(retryAuthenticationState, staleAuthenticationState)) return true;
+
+            if (!TryRefreshAuthenticationState(deviceInfo, staleAuthenticationState, challenge, out var refreshedState, out errorMessage))
+            {
+                errorMessage ??= "Shelly returned an invalid stale authentication challenge.";
+                return false;
+            }
+
+            Interlocked.CompareExchange(ref _authenticationState, refreshedState, staleAuthenticationState);
+            retryAuthenticationState = Volatile.Read(ref _authenticationState);
+            return true;
+        }
+    }
+
+    /// <summary>Executes one RPC attempt with the explicitly selected authentication state so callers can control login and retry behavior.</summary>
+    private async Task<ShellyRpcResult<TResult>> SendRpcAttemptAsync<TParams, TResult>(RpcMethods method, TParams? parameters, AuthenticationState? authenticationState, RpcResultParser<TResult>? resultParser, CancellationToken cancellationToken) where TParams : struct
     {
         var outputWriter = _webSocketOutputQueue?.Writer;
         var isConnected = !_disconnectRequested && _webSocket?.State == WebSocketState.Open && outputWriter is not null;
@@ -477,38 +431,16 @@ public partial class ShellyClient
         var pendingRequest = new PendingRequest<TResult>(resultParser);
         if (!TryReservePendingRequest(pendingRequest, out var requestId)) return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.ClientError, default, null, "All 65536 numeric request ids are currently in use.");
 
-        var authenticatedSendLockTaken = false;
-        if (authenticationState?.UsesReusableNonce == true)
-        {
-            try
-            {
-                await _authenticatedSendSemaphore.WaitAsync(ct).ConfigureAwait(false);
-                authenticatedSendLockTaken = true;
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                TryRemovePendingRequest(requestId, pendingRequest);
-                return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.Canceled, default, null, null);
-            }
-        }
-
         EnqueueStatus enqueueStatus;
         try
         {
-            try
-            {
-                var outgoingMessage = SerializeRpcRequest(requestId, method, parameters, authenticationState);
-                enqueueStatus = await EnqueueOutgoingMessageAsync(outputWriter!, outgoingMessage, ct).ConfigureAwait(false);
-            }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
-            {
-                TryRemovePendingRequest(requestId, pendingRequest);
-                return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.ClientError, default, null, exception.Message);
-            }
+            var outgoingMessage = SerializeRpcRequest(requestId, method, parameters, authenticationState);
+            enqueueStatus = await EnqueueOutgoingMessageAsync(outputWriter!, outgoingMessage, cancellationToken).ConfigureAwait(false);
         }
-        finally
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            if (authenticatedSendLockTaken) _authenticatedSendSemaphore.Release();
+            TryRemovePendingRequest(requestId, pendingRequest);
+            return new ShellyRpcResult<TResult>(ShellyRpcResultStatus.ClientError, default, null, exception.Message);
         }
 
         if (enqueueStatus != EnqueueStatus.Queued)
@@ -518,13 +450,12 @@ public partial class ShellyClient
             return new ShellyRpcResult<TResult>(status, default, null, null);
         }
 
-        return await WaitForPendingResponseAsync(requestId, pendingRequest, ct).ConfigureAwait(false);
+        return await WaitForPendingResponseAsync(requestId, pendingRequest, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Serializes one complete outbound RPC directly into pooled memory and appends authentication when the selected state requires it.</summary>
+    /// <summary>Serializes one outbound RPC into pooled memory and carries the selected authentication state to the send loop for ordered finalization.</summary>
     private OutgoingMessage SerializeRpcRequest<TParams>(ushort requestId, RpcMethods method, TParams? parameters, AuthenticationState? authenticationState) where TParams : struct
     {
-
         using var bufferWriter = new PooledByteBufferWriter(_pool, InitialRpcRequestBufferSize);
         var request = new RpcRequest<TParams>(requestId, method, parameters);
         var requestTypeInfo = GetRpcRequestTypeInfo<TParams>();
@@ -535,8 +466,7 @@ public partial class ShellyClient
             jsonWriter.Flush();
         }
 
-        if (authenticationState is not null) AppendAuthentication(bufferWriter, authenticationState);
-        return bufferWriter.DetachMessage();
+        return bufferWriter.DetachMessage(authenticationState);
     }
 
     /// <summary>Returns source-generated metadata for a registered typed RPC request and fails clearly when a request type was omitted from the serializer context.</summary>

@@ -1,9 +1,67 @@
 ﻿using ShellyNET.Client.Model;
+using System.Buffers.Binary;
+using System.Net;
 
 namespace ShellyNET.Client.Parsers;
 
 public sealed partial class ShellyNotifyStatusParser
 {
+
+    private bool ReadIPv4Property(ref Utf8JsonReader reader, ReadOnlySpan<byte> propertyName, DateTimeOffset timestamp, byte componentId, ComponentType componentType, PropertyName property)
+    {
+        if (!reader.ValueSpan.SequenceEqual(propertyName)) return false;
+
+        reader.Read();
+        if (reader.TokenType == JsonTokenType.Null)
+            AddMessage(new(timestamp, (double?)null, componentId, componentType, property));
+        else if (TryPackIPv4(reader.ValueSpan, out var packedIp))
+            AddMessage(new(timestamp, packedIp, componentId, componentType, property));
+
+        reader.Read();
+        return true;
+    }
+
+    private static bool TryPackIPv4(ReadOnlySpan<byte> value, out long packedIp)
+    {
+        packedIp = 0;
+        var address = IPAddress.Parse(value);
+
+        Span<byte> bytes = stackalloc byte[4];
+        if (!address.TryWriteBytes(bytes, out _)) return false;
+
+        packedIp = BinaryPrimitives.ReadUInt32BigEndian(bytes);
+        return true;
+    }
+
+    public static bool TryPackMacAddress(ReadOnlySpan<byte> value, out long packedAddress)
+    {
+        packedAddress = 0;
+        var digits = 0;
+
+        foreach (byte c in value)
+        {
+            if (c is (byte)':' or (byte)'-')
+                continue;
+
+            int hex = c switch
+            {
+                >= (byte)'0' and <= (byte)'9' => c - '0',
+                >= (byte)'A' and <= (byte)'F' => c - 'A' + 10,
+                >= (byte)'a' and <= (byte)'f' => c - 'a' + 10,
+                _ => -1
+            };
+
+            if (hex < 0 || ++digits > 12)
+            {
+                packedAddress = 0;
+                return false;
+            }
+
+            packedAddress = (packedAddress << 4) | (uint)hex;
+        }
+
+        return digits == 12;
+    }
 
     private bool ReadBluetoothAddressProperty(ref Utf8JsonReader reader, ReadOnlySpan<byte> propertyName, DateTimeOffset timestamp, byte componentId, ComponentType componentType)
     {

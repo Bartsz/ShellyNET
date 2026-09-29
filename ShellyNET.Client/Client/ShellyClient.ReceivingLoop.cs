@@ -10,6 +10,11 @@ public partial class ShellyClient
 {
     private readonly ShellyNotifyStatusParser _statusParser = new();
     private readonly ShellyNotifyEventParser _eventsParser = new();
+    private long[] _btHomeSensorMacAddressById = [];
+    private byte[] _btHomeSensorIdxById = [];
+    private BTHomeObjectType[] _btHomeObjectTypeById = [];
+
+    /// <summary>Waits for the next parsed component status notification published by the receive loop.</summary>
     public async ValueTask<ShellyNotifyStatusMessage> GetShellyStatusMessageAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -20,6 +25,18 @@ public partial class ShellyClient
         return default;
     }
 
+    /// <summary>Waits for the next parsed component status notification published by the receive loop.</summary>
+    public async ValueTask<BTHomeSensorStatus> GetBTHomeSensorMessage(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            return await _btHomeSensorsChannel.Reader.ReadAsync(ct).ConfigureAwait(false);
+        }
+
+        return default;
+    }
+
+    /// <summary>Waits for the next parsed component event notification published by the receive loop.</summary>
     public async ValueTask<ShellyComponentEvent> GetShellyEventAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -31,6 +48,14 @@ public partial class ShellyClient
     }
 
     private readonly Channel<ShellyComponentEvent> _shellyEventsChannel = Channel.CreateBounded<ShellyComponentEvent>(new BoundedChannelOptions(128)
+    {
+        AllowSynchronousContinuations = false,
+        SingleReader = true,
+        SingleWriter = true,
+        FullMode = BoundedChannelFullMode.Wait
+    });
+
+    private readonly Channel<BTHomeSensorStatus> _btHomeSensorsChannel = Channel.CreateBounded<BTHomeSensorStatus>(new BoundedChannelOptions(128)
     {
         AllowSynchronousContinuations = false,
         SingleReader = true,
@@ -63,7 +88,6 @@ public partial class ShellyClient
         var cancellationSource = _connectionCancellationSource!;
         var receiveBuffer = _pool.Rent(InitialReceiveBufferSize);
         ShellyUnexpectedDisconnectionEventArgs? unexpectedDisconnection = null;
-        int counter = 0;
         try
         {
             while (!cancellationSource.IsCancellationRequested)
@@ -175,10 +199,45 @@ public partial class ShellyClient
                         using var result = _statusParser.ProcessNotifyStatusMessage(message, StatesContainingObject.Params, ct);
 
                         for (var i = 0; i < result.MessageCount; i++)
-                            await _stateChangesChannel.Writer.WriteAsync(result.MessageSpan[i], ct).ConfigureAwait(false);
+                        {
+                            try
+                            {
+                                var msg = result.MessageSpan[i];
+                                if (msg.ComponentType != ComponentType.BTHomeSensor)
+                                    await _stateChangesChannel.Writer.WriteAsync(result.MessageSpan[i], ct).ConfigureAwait(false);
+                                else
+                                {
 
+                                    var mac = _btHomeSensorMacAddressById[msg.Id];
+                                    var idx = _btHomeSensorIdxById[msg.Id];
+                                    var objectType = _btHomeObjectTypeById[msg.Id];
+
+                                    if (msg.Value.HasValue)
+                                        await _btHomeSensorsChannel.Writer.WriteAsync(new(msg.Timestamp, msg.Value.Value, mac, idx, objectType)).ConfigureAwait(false);
+
+                                }
+                            }
+                            catch { }
+                        }
                         for (var i = 0; i < result.StringMessageCount; i++)
-                            await _stringStateChangesChannel.Writer.WriteAsync(result.StringMessageSpan[i], ct).ConfigureAwait(false);
+                        {
+                            try
+                            {
+                                var msg = result.StringMessageSpan[i];
+                                if (msg.ComponentType != ComponentType.BTHomeSensor)
+                                    await _stringStateChangesChannel.Writer.WriteAsync(result.StringMessageSpan[i], ct).ConfigureAwait(false);
+                                else
+                                {
+                                    var mac = _btHomeSensorMacAddressById[msg.Id];
+                                    var idx = _btHomeSensorIdxById[msg.Id];
+                                    var objectType = _btHomeObjectTypeById[msg.Id];
+
+                                    await _btHomeSensorsChannel.Writer.WriteAsync(new(msg.Timestamp, msg.State, mac, idx, objectType)).ConfigureAwait(false);
+                                }
+
+                            }
+                            catch { }
+                        }
                         return;
                     }
                 case ShellyNotificationType.NotifyEvent:

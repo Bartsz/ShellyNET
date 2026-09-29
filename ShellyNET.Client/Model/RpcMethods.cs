@@ -955,5 +955,5 @@ public enum RpcMethods
     [JsonStringEnumMemberName("Zigbee.SetConfig")]
     Zigbee_SetConfig,
     [JsonStringEnumMemberName("Zigbee.StartNetworkSteering")]
-    Zigbee_StartNetworkSteering
+    Zigbee_StartNetworkSteering, 
 }
